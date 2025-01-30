@@ -6,6 +6,7 @@ import { Dashboard } from "../pages/Dashboard";
 import { LoanRequest } from "../pages/LoanRequest";
 import { YieldFarming } from "../pages/YieldFarming";
 import MainLayout from "../pages/MainLayout";
+import { DashboardEmpty } from "../pages/DashboardEmpty";
 
 const AppRoutes = () => {
   return (
@@ -20,7 +21,7 @@ const AppRoutes = () => {
         />
         <Route path="/loan-request" element={<LoanRequest />} />
         <Route path="/yield-farming" element={<YieldFarming />} />
-        <Route path="/empty-dashboard" element={<YieldFarming />} />
+        <Route path="/empty-dashboard" element={<DashboardEmpty />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
     </Routes>

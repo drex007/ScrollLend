@@ -3,16 +3,6 @@ import { Footer } from "../components/Footer";
 export const AutomationSettings = () => {
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500">
-          Automation Settings
-        </h1>
-        <button className="btn bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-6 py-2 rounded-lg shadow-lg">
-          Connect Wallet
-        </button>
-      </header>
-
       {/* Automation Settings */}
       <main className="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
         <h2 className="text-xl font-semibold text-gray-100 mb-4">
