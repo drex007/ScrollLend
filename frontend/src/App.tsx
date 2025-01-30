@@ -1,11 +1,11 @@
-import "./App.css";
+import AppRoutes from "./routes/AppRoutes";
 
-function App() {
+const App = () => {
   return (
     <>
-      <button className="btn btn-primary">Click Me</button>
+      <AppRoutes />
     </>
   );
-}
+};
 
 export default App;
