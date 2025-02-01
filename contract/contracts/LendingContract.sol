@@ -23,7 +23,7 @@ contract LendingBorrowingContract  is ReentrancyGuard{
     //Errors
     error LendingBorrowingContract__TokenNotAllowed();
     error LendingBorrowingContract__CollateralDepositFailed();
-    error LendingBorrowingContract__AmountLessThanZero();
+    error LendingBorrowingContract__AmountNotMoreThanZero();
 
 
 
@@ -38,7 +38,7 @@ contract LendingBorrowingContract  is ReentrancyGuard{
 
     modifier  isGreaterThanZero (uint256 amount) {
         if (amount <= 0){
-            revert LendingBorrowingContract__AmountLessThanZero();
+            revert LendingBorrowingContract__AmountNotMoreThanZero();
         }
         _;
     }
