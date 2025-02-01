@@ -3,15 +3,15 @@ import { useLocation } from "react-router-dom";
 export const Header = () => {
   const location = useLocation();
   const titles: Record<string, string> = {
-    "/": "DefilGuard Dashboard",
+    "/": "ScrollLend Dashboard",
     "/activity-history": "Activity History",
     "/automation-settings": "Automation Settings",
     "/collateral-management": "Collateral Management",
     "/loan-request": "Loan Request",
     "/yield-farming": "Yield Farming",
-    "/empty-dashboard": "DefilGuard Dashboard",
+    "/empty-dashboard": "ScrollLend Dashboard",
   };
-  const pageTitle = titles[location.pathname] || "DefilGuard Dashboard";
+  const pageTitle = titles[location.pathname] || "ScrollLend Dashboard";
   return (
     <div className="h-24 p-6">
       <header className="flex justify-between items-center">
