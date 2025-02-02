@@ -83,7 +83,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     mapping(address user => mapping(address  token => uint256 amount)) public liquidityPool;
     mapping(address token => uint256 amount) public tvl;
 
-  
 
     //Owner functions 
     function addTokenAndPriceFeed (address token, address priceFeed) public onlyOwner {
