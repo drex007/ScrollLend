@@ -28,11 +28,14 @@ A specialized view for new users who have not yet interacted with the platform. 
 ## **2. Main Dashboard (User Panel)**  
 
 **Summary:**  
-The user's control center displaying a summary of their financial status within the platform. It provides information on debt health, active loans, deposited collateral, and pending interest. It also offers quick actions to interact with the platform easily.  
+The user's control center displaying a summary of their financial status within the platform. It provides information on debt health, active loans, deposited collateral, and pending interest. Additionally, it includes liquidity provider tier information and an explanation of tier levels, ensuring users understand their participation in the liquidity system.
+
+The dashboard also offers quick actions for seamless interaction with the platform  
 
 **Available Actions:**  
 - View loan and collateral status.  
-- Access personal financial metrics.  
+- Access personal financial metrics. 
+- Learn about the different tier levels and their rewards. 
 - Execute quick actions:  
   - Request Loan  
   - Deposit Collateral  

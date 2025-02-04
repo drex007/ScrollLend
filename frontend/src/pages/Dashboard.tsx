@@ -54,6 +54,70 @@ export const Dashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Liquidity Provider Tier Section */}
+        <div className="card bg-gray-800 shadow-lg rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-100 mb-4">
+            Liquidity Provider Tier
+          </h2>
+          <p className="text-sm text-gray-300 mb-4">
+            Your current tier:{" "}
+            <span className="font-bold text-white">Gold</span>
+          </p>
+          <p className="text-sm text-gray-300 mb-4">
+            Locked Liquidity:{" "}
+            <span className="font-bold text-white">$50,000</span>
+          </p>
+          <p className="text-sm text-gray-300 mb-4">
+            Time until unlock:{" "}
+            <span className="font-bold text-white">30 days</span>
+          </p>
+          <button className="btn bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white w-full py-2 rounded-lg shadow-md">
+            Manage Liquidity
+          </button>
+        </div>
+
+        {/* Tier Explanation Card */}
+        <div className="card bg-gray-800 shadow-lg rounded-lg p-6 lg:col-span-2">
+          <h2 className="text-lg font-semibold text-gray-100 mb-4 text-center">
+            Tier Levels
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <span className="text-yellow-400 text-3xl">🏆</span>
+              <h3 className="text-lg font-semibold text-yellow-400 mt-2">
+                Gold
+              </h3>
+              <ul className="text-sm text-gray-300 text-left mt-2 space-y-2">
+                <li>✨ Minimum deposit: $50,000</li>
+                <li>⏳ Lock period: 30 days</li>
+                <li>🚀 Highest rewards</li>
+              </ul>
+            </div>
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <span className="text-gray-400 text-3xl">🥈</span>
+              <h3 className="text-lg font-semibold text-gray-400 mt-2">
+                Silver
+              </h3>
+              <ul className="text-sm text-gray-300 text-left mt-2 space-y-2">
+                <li>✨ Minimum deposit: $20,000</li>
+                <li>⏳ Lock period: 20 days</li>
+                <li>⚖️ Balanced rewards</li>
+              </ul>
+            </div>
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <span className="text-orange-400 text-3xl">🥉</span>
+              <h3 className="text-lg font-semibold text-orange-400 mt-2">
+                Bronze
+              </h3>
+              <ul className="text-sm text-gray-300 text-left mt-2 space-y-2">
+                <li>✨ Minimum deposit: $5,000</li>
+                <li>⏳ Lock period: 10 days</li>
+                <li>🎯 Basic rewards</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* Activity Section */}
