@@ -27,6 +27,8 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 
 
 contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
+
+    
     //Errors
     error LendingBorrowingContract__TokenNotAllowed();
     error LendingBorrowingContract__CollateralDepositFailed();
@@ -39,8 +41,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     
     error LendingBorrowingContract__LoanRepaymentFailed();
     error LendingBorrowingContract__BorrowingFailed();
-
-
 
 
     //modifiers 
@@ -100,7 +100,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     event LendingBorrowingContract_AssetBorrowedSuccessful(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
     event LendingBorrowingContract_LiquidityWithdrawn(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
     event LendingBorrowingContract_LoanRepayed(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
-
 
     //Variables
     address public lendingContract;
@@ -268,7 +267,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
             liquidityPool[token][msg.sender].amount = 0;
 
             liquidityPool[token][msg.sender].withdrawalTime = 0;
-            
+
             tvl[token] -= _amount;
             emit LendingBorrowingContract_LiquidityWithdrawn(msg.sender, token, _amount, block.timestamp );
         }
