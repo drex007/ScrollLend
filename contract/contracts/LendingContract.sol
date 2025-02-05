@@ -28,7 +28,7 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 
 contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
-    
+
     //Errors
     error LendingBorrowingContract__TokenNotAllowed();
     error LendingBorrowingContract__CollateralDepositFailed();
@@ -41,6 +41,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     
     error LendingBorrowingContract__LoanRepaymentFailed();
     error LendingBorrowingContract__BorrowingFailed();
+
+     error LendingBorrowingContract__LiquidityPoolWithdrawalFailed();
 
 
     //modifiers 
@@ -261,16 +263,20 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
     function _withdrawFromLiquidityPool(address token) public nonReentrant {
         uint256 _amount = liquidityPool[msg.sender][token].amount;
+        
         require(block.timestamp > liquidityPool[msg.sender][token].withdrawalTime, "Your withdrawal time hasnt expired");
+
         bool success =  IERC20(token).transferFrom(address(this), msg.sender, _amount);
-        if(success){
-            liquidityPool[token][msg.sender].amount = 0;
 
-            liquidityPool[token][msg.sender].withdrawalTime = 0;
-
-            tvl[token] -= _amount;
-            emit LendingBorrowingContract_LiquidityWithdrawn(msg.sender, token, _amount, block.timestamp );
+        if(!success){
+            revert LendingBorrowingContract__LiquidityPoolWithdrawalFailed();
         }
+        liquidityPool[token][msg.sender].amount = 0;
+
+        liquidityPool[token][msg.sender].withdrawalTime = 0;
+
+        tvl[token] -= _amount;
+        emit LendingBorrowingContract_LiquidityWithdrawn(msg.sender, token, _amount, block.timestamp );
 
 
 
