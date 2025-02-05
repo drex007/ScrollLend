@@ -141,6 +141,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
         if(success){
 
             collateralDeposited[msg.sender][token] += amount;
+            tvl[token] +=amount;
 
             emit LendingBorrowingContract_DepositSuccessful(msg.sender, token, amount, block.timestamp);
 
@@ -184,7 +185,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
         assetsBorrowed[msg.sender][token].amount += amount;
         assetsBorrowed[msg.sender][token].borrowTimestamp += block.timestamp;
         assetsBorrowed[msg.sender][token].repaymentTimestamp += repaymentTimeStamp;
-        tvl[token] -=amount;
+       
 
         emit LendingBorrowingContract_AssetBorrowedSuccessful(msg.sender, token,  amount, repaymentTimeStamp);
 
@@ -204,7 +205,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
         liquidityPool[token][msg.sender].amount += amount;
         liquidityPool[token][msg.sender].withdrawalTime = withdrawalTime;
-        tvl[token] +=amount;
 
         emit LendingBorrowingContract_LiquidityDepositSuccessful(msg.sender, token, amount, block.timestamp);
         
@@ -246,7 +246,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
         assetsBorrowed[msg.sender][token].amount = 0;
         assetsBorrowed[msg.sender][token].repaymentTimestamp = 0;
-        tvl[token] += _amount;
         emit LendingBorrowingContract_LoanRepayed(msg.sender, token,_amount, block.timestamp );
         
 
@@ -263,7 +262,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
     function _withdrawFromLiquidityPool(address token) public nonReentrant {
         uint256 _amount = liquidityPool[msg.sender][token].amount;
-        
+
         require(block.timestamp > liquidityPool[msg.sender][token].withdrawalTime, "Your withdrawal time hasnt expired");
 
         bool success =  IERC20(token).transferFrom(address(this), msg.sender, _amount);
@@ -275,7 +274,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
         liquidityPool[token][msg.sender].withdrawalTime = 0;
 
-        tvl[token] -= _amount;
+        
         emit LendingBorrowingContract_LiquidityWithdrawn(msg.sender, token, _amount, block.timestamp );
 
 
@@ -302,6 +301,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     function _transferLiquidatedCollateralToLiquidator () internal view{
         // send liquidated collateral to liqudator
         // return liqudated user borrowed assets to 0
+
+        // tvl[token] -= _amount;
     }
 
 
