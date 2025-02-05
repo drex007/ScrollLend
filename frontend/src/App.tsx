@@ -1,9 +1,12 @@
+import { DAppContext } from "./context/DappContext";
 import AppRoutes from "./routes/AppRoutes";
 
 const App = () => {
   return (
     <>
-      <AppRoutes />
+      <DAppContext>
+        <AppRoutes />
+      </DAppContext>
     </>
   );
 };
