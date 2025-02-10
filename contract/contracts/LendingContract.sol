@@ -5,7 +5,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-
+import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
+import {Sender} from "./Sender.sol";
+import {Receiver} from "./Receiver.sol";
 
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
@@ -26,7 +28,7 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 
 
 
-contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
+contract LendingBorrowingContract  is ReentrancyGuard, Sender, Receiver {
 
 
     //Errors
@@ -78,7 +80,11 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
 
 
 
-    constructor()Ownable(msg.sender) {
+    constructor(address _router, address _link)
+    Receiver(_router)
+    Sender(_router, _link)
+     
+     {
         
     }
 
@@ -104,6 +110,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     event LendingBorrowingContract_LoanRepayed(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
 
     //Variables
+    address public contractOwner;
     address public lendingContract;
     uint256 HEALTH_FACTOR = 1_000_000_000_000_000_000; 
     uint256 WEI_PRECISION = 1_000_000_000_000_000_000;
@@ -121,6 +128,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, Ownable {
     mapping(address user => bool isActive) public debtManagementUsers;
     mapping(address user => mapping(address  token => AddLiquidityStruct liquidity)) public liquidityPool;
     mapping(address token => uint256 amount) public tvl;
+
 
 
     //Owner functions 
