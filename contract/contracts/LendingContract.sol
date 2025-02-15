@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
@@ -56,12 +56,14 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     error LendingBorrowingContract__BorrowedAmountIsNotZero();
     error LendingBorrowingContract__YouCantLiquidateMoreThanHalfOfPosition();
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance.
+    error LendingBorrowingContract__LiquidationFailed();
+    error LendingBorrowingContract__ChainAlreadyExist();
+
 
 
 
  
 
-    //modifiers 
 
     modifier  isTokenAllowed (address token) {
         if (priceFeeds[token] == address(0)){
@@ -120,7 +122,12 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         address token;
         uint256 amount;
         uint56 action;
+        address collateral;
+        address user2;
+        uint256 collateralAmount;
+
     }
+
     //CCIP EVENTS
 
 
@@ -158,6 +165,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     address lastReceivedToken;
     uint256 lastReceivedAmount;
     uint56 lastReceivedAction;
+    mapping(address chain => uint64 chainSelector) allowedChainSelectors;
     
    
 
@@ -177,7 +185,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     address []  public collateralTokens;
     uint56 LIQUIDATION_PERCENTAGE = 5;
     uint56 LIQUIDATION_PRECISION = 100;
-    uint56 DEPOSIT_CHARGE = 2; // 1% for deposit 
+    uint56 DEPOSIT_CHARGE = 2; // 1% for deposit
+ 
 
 
     mapping (address user =>mapping(address token => uint256 amount)) public collateralDeposited;
@@ -189,6 +198,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     mapping(address token => uint256 amount) public tvl;
 
     mapping(address token => uint256 amount) public treasury;
+
+    mapping(address token => uint256 amount) totalLiquidity;
 
 
 
@@ -202,6 +213,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     lendingContract = contract_address;
     }
 
+
     //Functions
     function depositCollateral ( address  token,  uint256 amount, uint64  destinationChainSelector, address destinationContract) public isTokenAllowed(token) isGreaterThanZero(amount) nonReentrant {
         
@@ -210,35 +222,32 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         uint256 _netDeposit = amount - _fee;
 
         //CCIP axtion here is 0 
+
+        collateralDeposited[msg.sender][token] += _netDeposit;
+        tvl[token] +=_netDeposit;
+
+        // Deposit fee to treasury
+        treasury[token] += _fee;
+
+        // Prepare ccip data
+        textData memory  structData;
+        structData.user = msg.sender;
+        structData.token = token;
+        structData.amount = _netDeposit;
+        structData.action  = 0; 
+       
+
         bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
 
-        if(success){
+        if(!success){
 
-            collateralDeposited[msg.sender][token] += _netDeposit;
-            tvl[token] +=_netDeposit;
-
-            // Deposit fee to treasury
-            treasury[token] += _fee;
-
-            // Prepare ccip data
-            textData memory  structData = textData ({
-            user: msg.sender,
-            token : token,
-            amount: _netDeposit,
-            action : 0 
-            });
-
-    
-
-            //Broadcast to other blockchain to update deposit status for this user
-            sendMessage(destinationChainSelector, destinationContract, structData);
-
-            emit LendingBorrowingContract_DepositSuccessful(msg.sender, token, _netDeposit, block.timestamp);
-
-        } else {
-            revert LendingBorrowingContract__CollateralDepositFailed(); 
+        revert LendingBorrowingContract__CollateralDepositFailed(); 
 
         }
+        //Broadcast to other blockchain to update deposit status for this user
+        sendMessage(destinationChainSelector, destinationContract, structData);
+
+        emit LendingBorrowingContract_DepositSuccessful(msg.sender, token, _netDeposit, block.timestamp);
     }
 
 
@@ -253,7 +262,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     }
 
     function borrowAsset (address token, uint256 amount, uint256 repaymentTimeStamp, uint64 destinationChainSelector, address destinationContract ) public checkRepaymentDateIsGreatherThanBorrowDate(repaymentTimeStamp, block.timestamp) isTokenAllowed(token) isGreaterThanZero(amount) checkForCollateralTokensLength nonReentrant{
-        //Command action === 1
+        //Command action === 2
         
         //Check if Healfactor is broken
         _checkForBrokenHealthFactor(msg.sender);
@@ -274,6 +283,10 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         assetsBorrowed[msg.sender][token].borrowTimestamp += block.timestamp;
         assetsBorrowed[msg.sender][token].repaymentTimestamp += repaymentTimeStamp;
 
+        totalLiquidity[token] -= amount;
+
+      
+
         bool success = IERC20(token).transfer(msg.sender,  amount);
 
         if(!success){
@@ -285,7 +298,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
         //Prepare structData
         textData memory structData; 
-        structData.action = 1;
+        structData.action = 2;
         structData.amount = amount;
         structData.token = token;
         structData.user = msg.sender;
@@ -304,19 +317,19 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
     function addLiquidity (address token, uint256 amount, uint256 withdrawalTime, uint64 destinationChainSelector, address destinationContract) public  isTokenAllowed(token) isGreaterThanZero(amount) nonReentrant {
         
-        // Command action  === 2
+        // Command action  === 1
 
         require(withdrawalTime > block.timestamp, "Withdrawal time must be greater than current timestamp");
 
         liquidityPool[msg.sender][token].amount += amount;
         liquidityPool[msg.sender][token].withdrawalTime = withdrawalTime;
 
+        totalLiquidity[token] += amount;
+
         bool success =  IERC20(token).transferFrom(msg.sender, address(this), amount);
 
         if(!success){
-            liquidityPool[msg.sender][token].amount = 0;
-            liquidityPool[msg.sender][token].withdrawalTime  = 0 ;
-
+    
             revert LendingBorrowingContract__LiquidityDepositFailed(); 
         } 
 
@@ -363,29 +376,26 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
     // }
 
-    function repayLoan (address token, uint64 destinationChainSelector, address destinationContract) public  nonReentrant{
+    function repayLoan (address token, uint256 _amount , uint64 destinationChainSelector, address destinationContract) public  nonReentrant{
+        //loan repayment command == 3
 
-        uint256 _amount =  assetsBorrowed[msg.sender][token].amount;
-        uint256 _repaymentTime =  assetsBorrowed[msg.sender][token].repaymentTimestamp;
+        uint256 _amountOwed =  assetsBorrowed[msg.sender][token].amount;
 
+        uint256 _amountToPay = _amount + (_amount * 1) /100; // Charge 1% of amount to be repayed
+       
         require(_amount > 0, "Amount should be greater than 0");
 
         //CEI
-        assetsBorrowed[msg.sender][token].amount = 0;
-        assetsBorrowed[msg.sender][token].repaymentTimestamp = 0;
+        assetsBorrowed[msg.sender][token].amount -= _amount ;
+        totalLiquidity[token] += _amount;
 
+        //Check if user is repqying alll amount owned and set repayment time  to 0
 
-        bool success =  IERC20(token).transferFrom(msg.sender, address(this), _amount);
+        if(_amount  >= _amountOwed){
+            assetsBorrowed[msg.sender][token].repaymentTimestamp = 0;
 
-        if(!success){
-
-        assetsBorrowed[msg.sender][token].amount = _amount;
-        assetsBorrowed[msg.sender][token].repaymentTimestamp = _repaymentTime;
-
-          revert LendingBorrowingContract__LoanRepaymentFailed();
         }
 
-        // Broadcast to other bllockchain to update repayment status 
         //Prepare ccip data
         textData memory structData; 
         structData.action = 3;
@@ -393,6 +403,15 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         structData.token = token;
         structData.user = msg.sender;
 
+        bool success =  IERC20(token).transferFrom(msg.sender, address(this), _amountToPay);
+
+        if(!success){
+
+          revert LendingBorrowingContract__LoanRepaymentFailed();
+        }
+
+
+        // Broadcast to other bllockchain to update repayment status 
         sendMessage(destinationChainSelector, destinationContract, structData);
 
         emit LendingBorrowingContract_LoanRepayed(msg.sender, token,_amount, block.timestamp );
@@ -408,6 +427,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     }
 
 function withdrawCollateralDeposited(address token, uint64 destinationChainSelector, address destinationContract) public isTokenAllowed(token)  nonReentrant{
+
+    _checkForBrokenHealthFactor(msg.sender);
     uint256 _borrowedAmount = 0;
     
    for(uint256  i = 0; i < collateralTokens.length; i++) {
@@ -421,16 +442,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
     uint256 _amount = collateralDeposited[msg.sender][token];
 
     collateralDeposited[msg.sender][token] = 0 ;
-
-    bool success =  IERC20(token).transfer(msg.sender, _amount);
-
-
-    if(!success){
-         collateralDeposited[msg.sender][token] += _amount;
-
-        revert LendingBorrowingContract__CollateralWithdrawalFailed();
-    }
-
+    tvl[token] -=_amount;
 
     //prepare data to broadcast to other blockhains 
 
@@ -439,6 +451,14 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
     structData.amount = 0;
     structData.token = token;
     structData.user = msg.sender;
+
+    bool success =  IERC20(token).transfer(msg.sender, _amount);
+
+
+    if(!success){
+        revert LendingBorrowingContract__CollateralWithdrawalFailed();
+    }
+
 
     sendMessage(destinationChainSelector, destinationContract, structData);
 
@@ -449,32 +469,46 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
 
 
-    function _withdrawFromLiquidityPool(address token, uint64 destinationChainSelector, address destinationContract) public nonReentrant isTokenAllowed(token) {
+    function withdrawFromLiquidityPool(address token, uint64 destinationChainSelector, address destinationContract) public nonReentrant isTokenAllowed(token) {
+        //1. get user anont for the token
+        //2. check if it time for withdrawal
+        //3. set collateral and amount withfrawal to 0
+        // 4. remove amount to be withrawn from total liquidty 
+
+       
+        //Liquidity withdrawl === 4
         uint256 _amount = liquidityPool[msg.sender][token].amount;
 
-        require(block.timestamp > liquidityPool[msg.sender][token].withdrawalTime  && _amount > 0, "Your withdrawal time hasnt expired or amount is less than zero");
+        require(block.timestamp > liquidityPool[msg.sender][token].withdrawalTime  && _amount > 0, "Your withdrawal time hasnt expired or must be greater than zero");
 
         liquidityPool[msg.sender][token].amount = 0;
         liquidityPool[msg.sender][token].withdrawalTime = 0;
+        
+        //
+        uint256 _netWithdrawal = _amount + ((_amount * 1)/100); // + additonal one percent
+
+        totalLiquidity[token] -= _netWithdrawal;
 
 
-        bool success =  IERC20(token).transfer(msg.sender, _amount);
+        bool success =  IERC20(token).transfer(msg.sender, _netWithdrawal);
 
+
+
+
+        //prepare data
+        textData memory structData; 
+        structData.action = 4;
+        structData.amount = _netWithdrawal;
+        structData.token = token;
+        structData.user = msg.sender;
 
         if(!success){
-            revert LendingBorrowingContract__LiquidityPoolWithdrawalFailed();
+        revert LendingBorrowingContract__LiquidityPoolWithdrawalFailed();
 
         }
         
 
         // Broadcast to update other blockain of the liquidity status 
-        //prepare data
-        textData memory structData; 
-        structData.action = 4;
-        structData.amount = _amount;
-        structData.token = token;
-        structData.user = msg.sender;
-
         sendMessage(destinationChainSelector, destinationContract, structData);
 
         
@@ -484,7 +518,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
     }
 
-    function liquidatePosition(address userToLiquidate, address _borrowedAsset, address _collateralAsset,  uint256 _amount)  public nonReentrant{
+    function liquidatePosition(address userToLiquidate, address _borrowedAsset, address _collateralAsset,  uint256 _amount,  uint64 destinationChainSelector, address destinationContract)  public nonReentrant{
 
       
         require(userToLiquidate != msg.sender, "Sorry, You cannot liquidate yourself");
@@ -512,23 +546,36 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
         // Add  liquidator compensation + usd equivalence of what was repayed from userToLiq to Liquidator compensation
         collateralDeposited[msg.sender][_collateralAsset] +=_liquidatorCompensation;
 
+        // Add to liquidity
+        totalLiquidity[_borrowedAsset] += _amount;
+
         // Trigger 105%  USD worth of liqudated user borrowed asset to be sent to user liqudating position
 
-        //prepare ccip and broadcast
+        //prepare ccip data and broadcast to other blockchain 
+        //1 1. 
+
+        textData memory structData;
+
+
+        structData.amount = _amount;
+        structData.action = 6;
+        structData.user =  msg.sender;
+        structData.token = _borrowedAsset;
+        structData.user2 = userToLiquidate;
+        structData.collateral =_collateralAsset;
+        structData.collateralAmount =_liquidatorCompensation;
+
         // Transfer the repayment balance from user
         bool success =  IERC20(_borrowedAsset).transferFrom(msg.sender, address(this), _amount);
 
         if(!success){
-   
-        assetsBorrowed[userToLiquidate][_borrowedAsset].amount += _amount;
-
-        collateralDeposited[userToLiquidate][_collateralAsset] +=_liquidatorCompensation;
-
-        collateralDeposited[msg.sender][_collateralAsset] -=_liquidatorCompensation;
-
-    
+            revert LendingBorrowingContract__LiquidationFailed();
         }
-        //prepare ccip data and broadcast to other blockchain 
+
+
+        //broadcast to other network 
+        sendMessage(destinationChainSelector, destinationContract, structData);
+
         
 
     }
@@ -654,10 +701,12 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
     }
 
 
-        function _ccipReceive(
+    function _ccipReceive(
             Client.Any2EVMMessage memory any2EvmMessage
         ) internal override {
             s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
+    
+
             textData memory decodedText = abi.decode(any2EvmMessage.data, (textData)); // abi-decoding of the sent text
             lastReceivedAction = decodedText.action;
             lastReceivedAmount = decodedText.amount;
@@ -669,28 +718,48 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
             // Action of 0 ==== CollateralDeposit 
             if(decodedText.action == 0) {
                 collateralDeposited[decodedText.user][decodedText.token] += decodedText.amount;
+                
             }
-            // borrow asset === 1
+            // Add Liquidity == 1
 
-            if(decodedText.action == 1) {
-                assetsBorrowed[decodedText.user][decodedText.token].amount += decodedText.amount;
-            }
-            // Add to liquidityPool ===2
-             if(decodedText.action == 2) {
+             if(decodedText.action == 1) {
                 liquidityPool[decodedText.user][decodedText.token].amount += decodedText.amount;
+                totalLiquidity[decodedText.token] += decodedText.amount;
+            }
+            // Borrow Assets == 2
+            if(decodedText.action == 2) {
+                assetsBorrowed[decodedText.user][decodedText.token].amount += decodedText.amount;
+                totalLiquidity[decodedText.token] -= decodedText.amount;
             }
             // Repay loan === 3
             if(decodedText.action == 3) {
-                assetsBorrowed[decodedText.user][decodedText.token].amount = 0;
+                assetsBorrowed[decodedText.user][decodedText.token].amount -= decodedText.amount;
+                totalLiquidity[decodedText.token] += decodedText.amount;
             }
 
             // Liquidity Withdrawal === 4
             if(decodedText.action == 4) {
                 liquidityPool[decodedText.user][decodedText.token].amount = 0;
+                totalLiquidity[decodedText.token] -= decodedText.amount;
+
             }
+            
               // Collateral withdrawal === 5
             if(decodedText.action == 5) {
                 collateralDeposited[decodedText.user][decodedText.token] = 0;
+            }
+            
+            if(decodedText.action == 6) {
+                //Subtract amount paid from borrowed assets
+                assetsBorrowed[decodedText.user2][decodedText.token].amount -= decodedText.amount;
+
+                // removed liquidator bonus and amt from debtor collateral
+                collateralDeposited[decodedText.user2][decodedText.collateral] -= decodedText.collateralAmount;
+                    // Add liquidator bonus and amt to liquidator collateral
+                collateralDeposited[decodedText.user][decodedText.collateral] += decodedText.collateralAmount;
+
+                totalLiquidity[decodedText.token] += decodedText.amount;
+               
             }
             
             
