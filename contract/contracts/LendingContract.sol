@@ -155,7 +155,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     event LendingBorrowingContract_LiquidityWithdrawn(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
     event LendingBorrowingContract_LoanRepayed(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
     event LendingBorrowingContract_CollateralWithdrawn(address indexed user, address indexed token, uint256 amount, uint256 timeStamp);
-
+    event LendingBorrowingContract__PortfolioReBalanced();
 
     //CCIP VARIABLES
 
@@ -656,6 +656,41 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
     }
 
+
+
+    function rebalancePortfolio(address swapFrom, address swapTo,  uint256 amount, uint64 destinationChainSelector, address destinationContract ) public isGreaterThanZero(amount)  returns(uint256) {
+           
+           //action should be
+            uint256 amountOnToken = collateralDeposited[msg.sender][swapFrom];
+            require(amountOnToken >= amount, "Insufficient collateral");
+            uint256 valueOfTokenFrom = _getAssetValueInUSD(swapFrom,  WEI_PRECISION); //et value of 1 token From;
+            uint256 valueOfTokenTo = _getAssetValueInUSD(swapTo, WEI_PRECISION); //Get value of 1 token To
+
+            uint256 rebalanced = (amount * valueOfTokenFrom) / valueOfTokenTo ;
+
+           
+            collateralDeposited[msg.sender][swapFrom] -= amount;
+            collateralDeposited[msg.sender][swapTo] += rebalanced; 
+
+            //send Data
+            textData memory structData;
+
+            structData.user = msg.sender;
+            structData.token = swapFrom;
+            structData.collateral = swapTo;
+            structData.action = 7;
+            structData.collateralAmount = rebalanced;
+            structData.amount = amount;
+
+            sendMessage(destinationChainSelector, destinationContract, structData );
+            emit LendingBorrowingContract__PortfolioReBalanced();
+            return rebalanced;
+
+
+
+
+        }
+
     //CCCIP FUNCTION
 
     function sendMessage(
@@ -760,6 +795,15 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
                 totalLiquidity[decodedText.token] += decodedText.amount;
                
+            }
+
+            if( decodedText.action == 7) {
+
+            collateralDeposited[decodedText.user][decodedText.token] -= decodedText.amount;
+
+            collateralDeposited[decodedText.user][decodedText.collateral] += decodedText.collateralAmount; 
+
+
             }
             
             
