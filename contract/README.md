@@ -32,6 +32,7 @@ NB: Ensure to use only tokens that has 8 decimals priceFeed
 5. Liquidity Withdrawal = 4
 6. Collateral Withdrawal  = 5
 7. Liquidation = 6
+8. Rebalance Portfolio =7
 
 
 ## Get Started

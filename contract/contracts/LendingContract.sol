@@ -58,6 +58,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance.
     error LendingBorrowingContract__LiquidationFailed();
     error LendingBorrowingContract__ChainAlreadyExist();
+    error LendingBorrowingContract__SourceContractNotAllowed();
 
 
 
@@ -94,6 +95,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         _;
     }
 
+ 
 
 
     constructor(address _router, address _link)
@@ -176,7 +178,6 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
 
     //Variables
-    address public contractOwner;
     address public lendingContract;
     uint256 HEALTH_FACTOR = 1_000_000_000_000_000_000; 
     uint256 WEI_PRECISION = 1_000_000_000_000_000_000;
@@ -185,7 +186,12 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     address []  public collateralTokens;
     uint56 LIQUIDATION_PERCENTAGE = 5;
     uint56 LIQUIDATION_PRECISION = 100;
-    uint56 DEPOSIT_CHARGE = 2; // 1% for deposit
+    uint56 DEPOSIT_CHARGE = 2 ; // 1% for deposit
+    uint56 MAX_DEPOSIT_CHARGE = 5;
+
+    uint256 TokenUtilizationThreshold = 80_000_000_000_000_000_000; // 80%
+
+   mapping(uint64 => bool) public isSourceChain;
  
 
 
@@ -199,7 +205,10 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
     mapping(address token => uint256 amount) public treasury;
 
-    mapping(address token => uint256 amount) totalLiquidity;
+    mapping(address token => uint256 amount) totalLiquidity; // amount of liquidity in the protocol 
+    mapping(address token => uint256 amount) totalBorrowedLiquidity; // amount of liquidity in the protocol 
+    
+
 
 
 
@@ -213,28 +222,38 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     lendingContract = contract_address;
     }
 
+    function addSourceContract( uint64 _sourceChain) public onlyOwner {
+        require(isSourceChain[_sourceChain] == false, "Source Chain already exist");
+        isSourceChain[_sourceChain] = true;
+
+    }
+
+    function removeSourceContract( uint64 _sourceChain) public onlyOwner {
+        require(isSourceChain[_sourceChain] == true, "Source Chain not found");
+        isSourceChain[_sourceChain] = false;
+
+    }
+
+    function recoverTokens(address tokenAddress, address recipient, uint256 amount) external onlyOwner {
+    IERC20(tokenAddress).transfer(recipient, amount);
+}
+
 
     //Functions
     function depositCollateral ( address  token,  uint256 amount, uint64  destinationChainSelector, address destinationContract) public isTokenAllowed(token) isGreaterThanZero(amount) nonReentrant {
         
-        uint256 _fee = (amount * DEPOSIT_CHARGE) / LIQUIDATION_PERCENTAGE;
+        
 
-        uint256 _netDeposit = amount - _fee;
-
-        //CCIP axtion here is 0 
-
-        collateralDeposited[msg.sender][token] += _netDeposit;
-        tvl[token] +=_netDeposit;
-
-        // Deposit fee to treasury
-        treasury[token] += _fee;
+        collateralDeposited[msg.sender][token] += amount;
+  
 
         // Prepare ccip data
         textData memory  structData;
         structData.user = msg.sender;
         structData.token = token;
-        structData.amount = _netDeposit;
+        structData.amount = amount;
         structData.action  = 0; 
+        tvl[token] += amount;
        
 
         bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -247,7 +266,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         //Broadcast to other blockchain to update deposit status for this user
         sendMessage(destinationChainSelector, destinationContract, structData);
 
-        emit LendingBorrowingContract_DepositSuccessful(msg.sender, token, _netDeposit, block.timestamp);
+        emit LendingBorrowingContract_DepositSuccessful(msg.sender, token, amount, block.timestamp);
     }
 
 
@@ -262,13 +281,29 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     }
 
     function borrowAsset (address token, uint256 amount, uint256 repaymentTimeStamp, uint64 destinationChainSelector, address destinationContract ) public checkRepaymentDateIsGreatherThanBorrowDate(repaymentTimeStamp, block.timestamp) isTokenAllowed(token) isGreaterThanZero(amount) checkForCollateralTokensLength nonReentrant{
+       
+       require(amount < totalLiquidity[token], "Insufficient Contract Balance");
+
+        _checkForBrokenHealthFactor(msg.sender);
+
+        uint256 CHARGE = 0;
+        
+        uint256 tur  = getTokenUtilizationRatio(token);
+
+        if(tur >= TokenUtilizationThreshold){
+            CHARGE = MAX_DEPOSIT_CHARGE;
+
+        } else {
+
+            CHARGE = DEPOSIT_CHARGE;
+        }
+        
         //Command action === 2
         
         //Check if Healfactor is broken
-        _checkForBrokenHealthFactor(msg.sender);
 
-        uint256 amountToBorrow =  _getAssetValueInUSD(token, amount);
-        uint256 amountAllowedToBorrow = _allowedBorrowingAmount(msg.sender);
+        uint256 amountToBorrow =  getAssetValueInUSD(token, amount);
+        uint256 amountAllowedToBorrow = allowedBorrowingAmount(msg.sender);
         
 
         //Ensure the amount to borrow is less than the amount allowedToBorrow
@@ -279,22 +314,29 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
         //CEI
 
+        uint256 _fee = (amount * CHARGE) / LIQUIDATION_PERCENTAGE;
+
+        uint256 _netBorrowed = amount - fee;
+        
+        
+
+        // Deposit fee to treasury
+        treasury[token] += _fee;
+
         assetsBorrowed[msg.sender][token].amount += amount;
         assetsBorrowed[msg.sender][token].borrowTimestamp += block.timestamp;
         assetsBorrowed[msg.sender][token].repaymentTimestamp += repaymentTimeStamp;
 
         totalLiquidity[token] -= amount;
 
-      
+        totalBorrowedLiquidity[token] +=amount;
 
-        bool success = IERC20(token).transfer(msg.sender,  amount);
+        bool success = IERC20(token).transfer(msg.sender,  _netBorrowed);
 
         if(!success){
             revert LendingBorrowingContract__BorrowingFailed();
 
         }
-
-
 
         //Prepare structData
         textData memory structData; 
@@ -351,13 +393,13 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
     }
 
-    function _userHealthFactor(address user) public view  returns (uint256){
+    function userHealthFactor(address user) public view  returns (uint256){
 
         //Get user collateral value in usd
-        uint256  _usercollateralAssets = _userTotalCollateralAssetInUsd(user);
+        uint256  _usercollateralAssets = userTotalCollateralAssetInUsd(user);
 
         //Get user assets borrowed
-        uint256  _userBorrowedAssets = _userTotalBorrowedAssetInUsd(user);
+        uint256  _userBorrowedAssets = userTotalBorrowedAssetInUsd(user);
 
         if(_userBorrowedAssets == 0){
             _userBorrowedAssets = 1;
@@ -370,7 +412,17 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         
     }
 
-    function _getTokenUtilizationRatio () public {}
+
+    // Helps determine charge for borrowing 
+    function getTokenUtilizationRatio (address token) public returns (uint256) {
+
+        uint256  amountSupplied = totalLiquidity[token];
+        uint256 amountBorrowed = totalBorrowedLiquidity[token];
+        uint256 tur = (amountBorrowed  * 100 * WEI_PRECISION ) / amountSupplied ;
+
+        return tur;
+
+    }
 
     // function _isUserPositionOpen (address user, address token) public {
 
@@ -388,6 +440,8 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
         //CEI
         assetsBorrowed[msg.sender][token].amount -= _amount ;
         totalLiquidity[token] += _amount;
+
+        totalBorrowedLiquidity[token] -=amount; 
 
         //Check if user is repqying alll amount owned and set repayment time  to 0
 
@@ -419,7 +473,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
 
     }
 
-    function _getAssetValueInUSD(address token, uint256 amount) internal view returns(uint256){
+    function getAssetValueInUSD(address token, uint256 amount) internal view returns(uint256){
         AggregatorV3Interface tokenPrice = AggregatorV3Interface(priceFeeds[token]);
         (,int256 price, , ,) = tokenPrice.latestRoundData();
         return ((uint256 (price )* PRICE_FEED_PRECISION) * amount ) / WEI_PRECISION;
@@ -427,6 +481,7 @@ contract LendingBorrowingContract  is ReentrancyGuard, CCIPReceiver, OwnerIsCrea
     }
 
 function withdrawCollateralDeposited(address token, uint64 destinationChainSelector, address destinationContract) public isTokenAllowed(token)  nonReentrant{
+    require(amount < tvl[token], "Insufficient Contract Balance");
 
     _checkForBrokenHealthFactor(msg.sender);
     uint256 _borrowedAmount = 0;
@@ -470,6 +525,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
 
     function withdrawFromLiquidityPool(address token, uint64 destinationChainSelector, address destinationContract) public nonReentrant isTokenAllowed(token) {
+        require(amount < totalLiquidity[token], "Insufficient Contract Balance");
         //1. get user anont for the token
         //2. check if it time for withdrawal
         //3. set collateral and amount withfrawal to 0
@@ -489,18 +545,14 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
         totalLiquidity[token] -= _netWithdrawal;
 
-
-        bool success =  IERC20(token).transfer(msg.sender, _netWithdrawal);
-
-
-
-
         //prepare data
         textData memory structData; 
         structData.action = 4;
         structData.amount = _netWithdrawal;
         structData.token = token;
         structData.user = msg.sender;
+
+        bool success =  IERC20(token).transfer(msg.sender, _netWithdrawal);
 
         if(!success){
         revert LendingBorrowingContract__LiquidityPoolWithdrawalFailed();
@@ -529,9 +581,9 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
         // Amount To Transfer to liquidator  = usdAmtToPay  * (1/usdAmtOfOneBorrowedAsset) *  (1 + % of bonus)
 
         //Get borrowed asset USD value
-        uint256 _valueOfOneCollateralAsset = _getAssetValueInUSD(_collateralAsset, WEI_PRECISION); //value of one collateral asset in WEI
+        uint256 _valueOfOneCollateralAsset = getAssetValueInUSD(_collateralAsset, WEI_PRECISION); //value of one collateral asset in WEI
 
-        uint256 _repaymentAmountValue = _getAssetValueInUSD(_borrowedAsset, _amount); // amount liquidator wish to repay
+        uint256 _repaymentAmountValue = getAssetValueInUSD(_borrowedAsset, _amount); // amount liquidator wish to repay
         
         uint256 _liquidatorCompensation = _repaymentAmountValue * (1/_valueOfOneCollateralAsset) * ((LIQUIDATION_PRECISION + LIQUIDATION_PERCENTAGE) /LIQUIDATION_PRECISION
          ) * WEI_PRECISION;
@@ -548,6 +600,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
         // Add to liquidity
         totalLiquidity[_borrowedAsset] += _amount;
+        totalBorrowedLiquidity[_borrowedAsset] -=amount;
 
         // Trigger 105%  USD worth of liqudated user borrowed asset to be sent to user liqudating position
 
@@ -588,20 +641,20 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
         for(uint256  i = 0; i < collateralTokens.length; i++){
             address token = collateralTokens[i];
             uint256 amount = tvl[token];
-            totalCollateralValueInUsd += _getAssetValueInUSD(token, amount);
+            totalCollateralValueInUsd += getAssetValueInUSD(token, amount);
 
         }
         return totalCollateralValueInUsd;
     }
 
 
-    function _userTotalBorrowedAssetInUsd(address user) public view returns(uint256) {
+    function userTotalBorrowedAssetInUsd(address user) public view returns(uint256) {
         uint256 _userBorrowedAssets = 0;
       
         // Get USD value of users borrowed Assets 
         for(uint256  i = 0; i < collateralTokens.length; i++){
         uint256 amount = assetsBorrowed[user][collateralTokens[i]].amount;
-        uint256 totalCollateralValueInUsd = _getAssetValueInUSD(collateralTokens[i], amount);
+        uint256 totalCollateralValueInUsd = getAssetValueInUSD(collateralTokens[i], amount);
         _userBorrowedAssets += totalCollateralValueInUsd;
 
         }
@@ -613,12 +666,12 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
 
 
       // Get USD value of users Collateral Assets 
-    function _userTotalCollateralAssetInUsd(address user) public view returns(uint256) {
+    function userTotalCollateralAssetInUsd(address user) public view returns(uint256) {
         uint256 _usercollateralAssets  = 0;
 
         for(uint256  i = 0; i < collateralTokens.length; i++){
             uint256 amount = collateralDeposited[user][collateralTokens[i]];
-            uint256 totalCollateralValueInUsd = _getAssetValueInUSD(collateralTokens[i], amount);
+            uint256 totalCollateralValueInUsd = getAssetValueInUSD(collateralTokens[i], amount);
             _usercollateralAssets  += totalCollateralValueInUsd;
 
             }
@@ -628,7 +681,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
     }
 
     function _checkForBrokenHealthFactor(address user) internal view {
-        uint256 healthFactor = _userHealthFactor(user);
+        uint256 healthFactor = userHealthFactor(user);
         if(healthFactor  < HEALTH_FACTOR){
             revert LendingBorrowingContract__HealthFactorIsBroken(healthFactor);
         }
@@ -640,9 +693,9 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
     //Check for the amount a user is allowed to borrrow based on
     //1. Health Factor
     //2 . Amount Borrowed and collateral deposited
-    function _allowedBorrowingAmount(address user) public view  returns (uint256){
-        uint256 collateralAssetValue =  _userTotalCollateralAssetInUsd(user);
-        uint256 borrowedAssetValue = _userTotalBorrowedAssetInUsd(user);
+    function allowedBorrowingAmount(address user) public view  returns (uint256){
+        uint256 collateralAssetValue =  userTotalCollateralAssetInUsd(user);
+        uint256 borrowedAssetValue = userTotalBorrowedAssetInUsd(user);
 
         uint256 effectiveCollateralValue = (collateralAssetValue * HEALTH_FACTOR_THRESHOLD) /WEI_PRECISION;
 
@@ -663,8 +716,8 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
            //action should be
             uint256 amountOnToken = collateralDeposited[msg.sender][swapFrom];
             require(amountOnToken >= amount, "Insufficient collateral");
-            uint256 valueOfTokenFrom = _getAssetValueInUSD(swapFrom,  WEI_PRECISION); //et value of 1 token From;
-            uint256 valueOfTokenTo = _getAssetValueInUSD(swapTo, WEI_PRECISION); //Get value of 1 token To
+            uint256 valueOfTokenFrom = getAssetValueInUSD(swapFrom,  WEI_PRECISION); //et value of 1 token From;
+            uint256 valueOfTokenTo = getAssetValueInUSD(swapTo, WEI_PRECISION); //Get value of 1 token To
 
             uint256 rebalanced = (amount * valueOfTokenFrom) / valueOfTokenTo ;
 
@@ -740,6 +793,9 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
             Client.Any2EVMMessage memory any2EvmMessage
         ) internal override {
             s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
+            uint64 chain = any2EvmMessage.sourceChainSelector;
+
+            require(isSourceChain[chain] == true, "Source chain not recognised");
     
 
             textData memory decodedText = abi.decode(any2EvmMessage.data, (textData)); // abi-decoding of the sent text
@@ -753,6 +809,7 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
             // Action of 0 ==== CollateralDeposit 
             if(decodedText.action == 0) {
                 collateralDeposited[decodedText.user][decodedText.token] += decodedText.amount;
+                tvl[decodedText.token] += decodedText.amount;
                 
             }
             // Add Liquidity == 1
@@ -765,11 +822,13 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
             if(decodedText.action == 2) {
                 assetsBorrowed[decodedText.user][decodedText.token].amount += decodedText.amount;
                 totalLiquidity[decodedText.token] -= decodedText.amount;
+                totalBorrowedLiquidity[decodedText.token] += decodedText.amount;
             }
             // Repay loan === 3
             if(decodedText.action == 3) {
                 assetsBorrowed[decodedText.user][decodedText.token].amount -= decodedText.amount;
                 totalLiquidity[decodedText.token] += decodedText.amount;
+                totalBorrowedLiquidity[decodedText.token] -= decodedText.amount;
             }
 
             // Liquidity Withdrawal === 4
@@ -794,14 +853,19 @@ function withdrawCollateralDeposited(address token, uint64 destinationChainSelec
                 collateralDeposited[decodedText.user][decodedText.collateral] += decodedText.collateralAmount;
 
                 totalLiquidity[decodedText.token] += decodedText.amount;
+                totalBorrowedLiquidity[decodedText.token] -= decodedText.amount;
+                tvl[decodedText.token] -= decodedText.amount;
                
             }
 
+            // Rebalance portfolio
             if( decodedText.action == 7) {
 
             collateralDeposited[decodedText.user][decodedText.token] -= decodedText.amount;
 
             collateralDeposited[decodedText.user][decodedText.collateral] += decodedText.collateralAmount; 
+            tvl[decodedText.token] -= decodedText.amount;
+            tvl[decodedText.collateral] +=decodedText.collateralAmount; 
 
 
             }
