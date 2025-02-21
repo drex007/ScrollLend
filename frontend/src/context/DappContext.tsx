@@ -1,32 +1,73 @@
-import React, { useEffect } from "react";
-import { DAppProvider, Config, useEthers } from "@usedapp/core";
+import { createContext, useContext, useState } from "react";
+import { BrowserProvider, Contract, Signer } from "ethers";
+import {
+  CONTRACT_ADDRESS,
+  CONTRACT_ABI,
+} from "../utils/LendingBorrowingContract";
 
-const CHAIN_ID = Number(import.meta.env.VITE_SCROLL_CHAIN_ID);
-const RPC_URL = import.meta.env.VITE_SCROLL_RPC_URL;
+const DappContext = createContext<{
+  contract: Contract | null;
+  account: string | null;
+  provider: BrowserProvider | null;
+  signer: Signer | null;
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+}>({
+  contract: null,
+  account: null,
+  provider: null,
+  signer: null,
+  connectWallet: async () => {},
+  disconnectWallet: () => {},
+});
 
-const config: Config = {
-  readOnlyChainId: CHAIN_ID,
-  readOnlyUrls: {
-    [CHAIN_ID]: RPC_URL,
-  },
-};
+export const useDapp = () => useContext(DappContext);
 
-const NetworkHandler = ({ children }: { children: React.ReactNode }) => {
-  const { chainId, switchNetwork } = useEthers();
+export const DAppProvider = ({ children }: { children: React.ReactNode }) => {
+  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<Signer | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (chainId && chainId !== CHAIN_ID) {
-      switchNetwork?.(CHAIN_ID);
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("MetaMask is not installet");
+      return;
     }
-  }, [chainId]);
+    try {
+      const browserProvider = new BrowserProvider(window.ethereum);
+      const signerInstance = await browserProvider.getSigner();
+      const address = await signerInstance.getAddress();
 
-  return <>{children}</>;
-};
+      setProvider(browserProvider);
+      setSigner(signerInstance);
+      setAccount(address);
 
-export const DAppContext = ({ children }: { children: React.ReactNode }) => {
+      setContract(new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signerInstance));
+    } catch (error) {
+      console.error("Error to connect MetaMask:", error);
+    }
+  };
+
+  const disconnectWallet = () => {
+    setProvider(null);
+    setSigner(null);
+    setContract(null);
+    setAccount(null);
+  };
+
   return (
-    <DAppProvider config={config}>
-      <NetworkHandler>{children}</NetworkHandler>
-    </DAppProvider>
+    <DappContext.Provider
+      value={{
+        contract,
+        account,
+        provider,
+        signer,
+        connectWallet,
+        disconnectWallet,
+      }}
+    >
+      {children}
+    </DappContext.Provider>
   );
 };

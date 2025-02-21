@@ -1,6 +1,11 @@
 import { Footer } from "../components/Footer";
+import { useHealthFactor } from "../hooks/useHealthFactor";
 
 export const Dashboard = () => {
+  const { healthFactor } = useHealthFactor();
+
+  console.log("healthFactor", healthFactor);
+
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200 flex-grow">
       {/* Main Content */}
