@@ -1,28 +1,27 @@
-import { ethers, Contract, Signer } from "ethers";
+import { Contract, formatUnits, parseUnits, Signer } from "ethers";
 import { ILendingBorrowingContract } from "../application/contracts/ILendingBorrowingContract";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./../utils/LendingBorrowingContract";
-import { formatUnits, parseUnits } from "ethers/lib/utils";
+import { BrowserProvider } from "ethers";
 
 export class EthersLendingBorrowingContract implements ILendingBorrowingContract {
   private contract: Contract;
 
-  constructor(provider: ethers.providers.Web3Provider | Signer) {
+  constructor(provider: BrowserProvider | Signer) {
     this.contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
   }
 
-  // 🔹 Gestión de colateral y préstamos
-  async depositCollateral(token: string, amount: string, destinationChainSelector: number, destinationContract: string): Promise<void> {
-    const tx = await this.contract.depositCollateral(token, parseUnits(amount, 18), destinationChainSelector, destinationContract);
+  async depositCollateral(token: string, amount: string): Promise<void> {
+    const tx = await this.contract.depositCollateral(token, parseUnits(amount, 18));
     await tx.wait();
   }
 
-  async borrowAsset(token: string, amount: string, repaymentTimestamp: number, destinationChainSelector: number): Promise<void> {
-    const tx = await this.contract.borrowAsset(token, parseUnits(amount, 18), repaymentTimestamp, destinationChainSelector);
+  async borrowAsset(token: string, amount: string, repaymentTimestamp: number): Promise<void> {
+    const tx = await this.contract.borrowAsset(token, parseUnits(amount, 18), repaymentTimestamp);
     await tx.wait();
   }
 
-  async withdrawCollateralDeposited(token: string, destinationChainSelector: number, destinationContract: string): Promise<void> {
-    const tx = await this.contract.withdrawCollateralDeposited(token, destinationChainSelector, destinationContract);
+  async withdrawCollateralDeposited(token: string): Promise<void> {
+    const tx = await this.contract.withdrawCollateralDeposited(token);
     await tx.wait();
   }
 
