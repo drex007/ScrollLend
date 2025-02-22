@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useDapp } from "../context/DappContext";
 import { formatUnits } from "ethers";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const useAllowedBorrowingAmount = () => {
-  const { contract, account } = useDapp();
+  const { contract, account } = useWallet();
   const [allowedAmount, setAllowedAmount] = useState<string | null>(null);
   const [loadingAllowedAmount, setLoadingAllowedAmount] =
     useState<boolean>(true);

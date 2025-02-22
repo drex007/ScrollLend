@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useDapp } from "../context/DappContext";
 import { parseUnits, formatUnits } from "ethers";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const useAssetValueInUSD = () => {
-  const { contract } = useDapp();
+  const { contract } = useWallet();
   const [loadingValueInUSD, setLoadingValueInUSD] = useState<boolean>(false);
 
   const getAssetValue = async (token: string, amount: string) => {

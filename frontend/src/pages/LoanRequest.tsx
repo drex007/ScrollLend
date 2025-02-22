@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Footer } from "../components/Footer";
-import { useDapp } from "../context/DappContext";
 import { useAvailableCollateral } from "../hooks/useAvailableCollateral";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const LoanRequest = () => {
-  const { account } = useDapp();
+  const { account } = useWallet();
   const { availableCollateral, loading } = useAvailableCollateral();
 
   const [selectedToken, setSelectedToken] = useState<string | null>(null);

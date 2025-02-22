@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useDapp } from "../context/DappContext";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const useWithdrawCollateral = () => {
-  const { contract, account } = useDapp();
+  const { contract, account } = useWallet();
   const [isWithdrawing, setIsWithdrawing] = useState<boolean>(false);
 
   const withdrawCollateral = async (tokenAddress: string) => {

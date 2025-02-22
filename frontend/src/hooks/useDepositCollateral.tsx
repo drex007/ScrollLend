@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useDapp } from "../context/DappContext";
 import { parseUnits, Contract } from "ethers";
 import { ERC_20 } from "../abis/ERC_20";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const useDepositCollateral = () => {
-  const { contract, signer, account } = useDapp();
+  const { contract, signer, account } = useWallet();
   const [isDepositing, setIsDepositing] = useState<boolean>(false);
 
   const depositCollateral = async (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useDapp } from "../context/DappContext";
 import { formatUnits } from "ethers";
+import { useWallet } from "../context/WalletConnectProvider";
 
 const TOKENS = [
   {
@@ -28,7 +28,7 @@ export interface CollateralToken {
 }
 
 export const useCollateral = () => {
-  const { contract, account } = useDapp();
+  const { contract, account } = useWallet();
   const [collateral, setCollateral] = useState<CollateralToken[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 

@@ -1,12 +1,13 @@
-import { DAppProvider } from "./context/DappContext";
+import "./config/WalletConnectConfig";
+import { WalletContextProvider } from "./context/WalletConnectProvider";
 import AppRoutes from "./routes/AppRoutes";
 
 const App = () => {
   return (
     <>
-      <DAppProvider>
+      <WalletContextProvider>
         <AppRoutes />
-      </DAppProvider>
+      </WalletContextProvider>
     </>
   );
 };

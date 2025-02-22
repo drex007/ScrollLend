@@ -1,8 +1,10 @@
 import { useLocation } from "react-router-dom";
-import { useDapp } from "../context/DappContext";
+import { useWallet } from "../context/WalletConnectProvider";
+import { useAppKit } from "@reown/appkit/react";
 
 export const Header = () => {
-  const { account, connectWallet, disconnectWallet } = useDapp();
+  const { account } = useWallet();
+  const { open } = useAppKit();
   const location = useLocation();
   const titles: Record<string, string> = {
     "/": "ScrollLend Dashboard",
@@ -26,16 +28,13 @@ export const Header = () => {
               0,
               6
             )}...${account.substring(account.length - 4)}`}</p>
-            <button
-              onClick={disconnectWallet}
-              className="btn bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg shadow-lg"
-            >
+            <button className="btn bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg shadow-lg">
               Disconnect
             </button>
           </div>
         ) : (
           <button
-            onClick={connectWallet}
+            onClick={() => open()}
             className="btn bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-6 py-2 rounded-lg shadow-lg"
           >
             Connect Wallet

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useDapp } from "../context/DappContext";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const useHealthFactor = () => {
-  const { contract, account } = useDapp();
+  const { contract, account } = useWallet();
   const [healthFactor, setHealthFactor] = useState<string | null>(null);
 
   useEffect(() => {

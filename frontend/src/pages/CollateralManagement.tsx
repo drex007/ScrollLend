@@ -2,14 +2,14 @@ import { useState } from "react";
 import { CollateralCard } from "../components/collateral-management/CollateralCard";
 import { CollateralCardSkeleton } from "../components/collateral-management/CollateralCardSkeleton";
 import { Footer } from "../components/Footer";
-import { useDapp } from "../context/DappContext";
 import { useCollateral } from "../hooks/useCollateral";
 import { useDepositCollateral } from "../hooks/useDepositCollateral";
+import { useWallet } from "../context/WalletConnectProvider";
 
 export const CollateralManagement = () => {
   const { collateral, loading } = useCollateral();
   const { depositCollateral, isDepositing } = useDepositCollateral();
-  const { account } = useDapp();
+  const { account } = useWallet();
 
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
