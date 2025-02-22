@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { formatUnits } from "ethers";
 import { useWallet } from "../context/WalletConnectProvider";
 
 export const useAllowedBorrowingAmount = () => {
@@ -21,7 +20,7 @@ export const useAllowedBorrowingAmount = () => {
 
       try {
         const amount = await contract.allowedBorrowingAmount(account);
-        setAllowedAmount(formatUnits(amount, 18));
+        setAllowedAmount(amount);
       } catch (error) {
         console.error("Error fetching allowed borrowing amount:", error);
       } finally {

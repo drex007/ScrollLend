@@ -9,6 +9,11 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
   constructor(provider: BrowserProvider | Signer) {
     this.contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
   }
+
+  async getAssetValueInUSD(token: string, amount: string): Promise<string> {
+    const valueInUSD = await this.contract.getAssetValueInUSD(token, parseUnits(amount, 18));
+    return formatUnits(valueInUSD, 18);
+  }
   async collateralDeposited(user: string, token: string): Promise<string> {
     const amount = await this.contract.collateralDeposited(user, token);
     return formatUnits(amount, 18);

@@ -8,7 +8,7 @@ const TIER_LEVELS = [
     minDeposit: 50000,
     lockPeriod: 30,
     color: "text-yellow-400",
-    reward: "⚖️ Balanced rewards",
+    reward: "🚀 Highest rewards",
     icon: "🏆",
   },
   {

@@ -1,25 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Footer } from "../components/Footer";
 import { useAvailableCollateral } from "../hooks/useAvailableCollateral";
 import { useWallet } from "../context/WalletConnectProvider";
+import { useAssetValueInUSD } from "../hooks/useAssetValueInUSD";
+import { useAllowedBorrowingAmount } from "../hooks/useAllowedBorrowingAmount";
+import { useBorrowAsset } from "../hooks/useBorrowAsset";
 
 export const LoanRequest = () => {
   const { account } = useWallet();
   const { availableCollateral, loading } = useAvailableCollateral();
+  const { getAssetValue, loadingValueInUSD } = useAssetValueInUSD();
+  const { allowedAmount, loadingAllowedAmount } = useAllowedBorrowingAmount();
+  const { borrowAsset, isBorrowing } = useBorrowAsset();
 
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [loanAmount, setLoanAmount] = useState<string>("");
-  const [collateralAmount, setCollateralAmount] = useState<string>("");
+  const [loanValueInUSD, setLoanValueInUSD] = useState<string | null>(null);
 
-  const handleLoanRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedToken) return;
-    console.log("🚀 Requesting loan for:", {
-      token: selectedToken,
-      loanAmount,
-      collateralAmount,
-    });
-  };
+  useEffect(() => {
+    const fetchLoanValue = async () => {
+      if (selectedToken && loanAmount) {
+        const valueInUSD = await getAssetValue(selectedToken, loanAmount);
+        setLoanValueInUSD(valueInUSD);
+      } else {
+        setLoanValueInUSD(null);
+      }
+    };
+
+    fetchLoanValue();
+  }, [selectedToken, loanAmount]);
 
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200">
@@ -33,7 +42,15 @@ export const LoanRequest = () => {
             <p className="text-gray-300 text-lg mb-4">🔗 Connect your wallet</p>
           </div>
         ) : (
-          <form onSubmit={handleLoanRequest} className="space-y-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (selectedToken) {
+                borrowAsset(selectedToken, loanAmount);
+              }
+            }}
+            className="space-y-6"
+          >
             {/* Selección de Token con colateral */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -73,21 +90,13 @@ export const LoanRequest = () => {
                 onChange={(e) => setLoanAmount(e.target.value)}
                 disabled={!selectedToken}
               />
-            </div>
-
-            {/* Monto del Colateral */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Collateral Amount
-              </label>
-              <input
-                type="number"
-                className="input input-bordered w-full bg-gray-700 text-gray-300"
-                placeholder="Enter collateral amount"
-                value={collateralAmount}
-                onChange={(e) => setCollateralAmount(e.target.value)}
-                disabled={!selectedToken}
-              />
+              {loadingValueInUSD ? (
+                <p className="text-gray-400 mt-2">Calculating USD value...</p>
+              ) : loanValueInUSD ? (
+                <p className="text-gray-400 mt-2">
+                  Estimated value in USD: ${loanValueInUSD}
+                </p>
+              ) : null}
             </div>
 
             {/* Botón de Envío */}
@@ -96,10 +105,17 @@ export const LoanRequest = () => {
                 type="submit"
                 className="btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white px-6 py-2 rounded-lg shadow-lg"
                 disabled={
-                  !selectedToken || loanAmount === "" || collateralAmount === ""
+                  !selectedToken ||
+                  loanAmount === "" ||
+                  Number(loanValueInUSD) > Number(allowedAmount) ||
+                  isBorrowing
                 }
               >
-                Request Loan
+                {isBorrowing
+                  ? "Processing..."
+                  : loadingAllowedAmount
+                  ? "Checking..."
+                  : `Request Loan (Max: ${allowedAmount} USD)`}
               </button>
             </div>
           </form>

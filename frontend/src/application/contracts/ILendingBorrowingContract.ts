@@ -6,6 +6,7 @@ export interface ILendingBorrowingContract {
   collateralDeposited(user: string, token: string): Promise<string>;
   repayLoan(token: string, amount: string): Promise<void>;
   liquidatePosition(userToLiquidate: string, borrowedAsset: string, collateralAsset: string, amount: string): Promise<void>;
+  getAssetValueInUSD(token: string, amount: string): Promise<string>;
 
   // Consultas de usuario
   getUserTotalBorrowed(user: string): Promise<string>;

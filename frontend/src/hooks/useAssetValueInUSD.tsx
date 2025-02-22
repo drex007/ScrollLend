@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { parseUnits, formatUnits } from "ethers";
 import { useWallet } from "../context/WalletConnectProvider";
 
 export const useAssetValueInUSD = () => {
@@ -15,11 +14,8 @@ export const useAssetValueInUSD = () => {
     setLoadingValueInUSD(true);
 
     try {
-      const valueInUSD = await contract.getAssetValueInUSD(
-        token,
-        parseUnits(amount, 18)
-      );
-      return formatUnits(valueInUSD, 18);
+      const valueInUSD = await contract.getAssetValueInUSD(token, amount);
+      return valueInUSD;
     } catch (error) {
       console.error("Error fetching asset value in USD:", error);
       return null;

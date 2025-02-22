@@ -9,7 +9,7 @@ export const useAvailableCollateral = () => {
 
   useEffect(() => {
     const filteredCollateral = collateral.filter(
-      (token) => parseFloat(token.amount) > 1
+      (token) => parseFloat(token.amount) > 0
     );
     setAvailableCollateral(filteredCollateral);
   }, [collateral]);
