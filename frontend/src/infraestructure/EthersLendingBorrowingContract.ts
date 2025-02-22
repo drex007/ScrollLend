@@ -9,6 +9,10 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
   constructor(provider: BrowserProvider | Signer) {
     this.contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
   }
+  async collateralDeposited(user: string, token: string): Promise<string> {
+    const amount = await this.contract.collateralDeposited(user, token);
+    return formatUnits(amount, 18);
+  }
 
   async depositCollateral(token: string, amount: string): Promise<void> {
     const tx = await this.contract.depositCollateral(token, parseUnits(amount, 18));
@@ -64,7 +68,6 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
     try {
       console.log("Llamando a userHealthFactor con:", user);
 
-      // Usamos provider.call() directamente para evitar problemas con ethers v5.7
       const data = await this.contract.provider.call({
         to: this.contract.address,
         data: this.contract.interface.encodeFunctionData("userHealthFactor", [user]),
@@ -98,6 +101,15 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
   async calculateBasicLPRewards(token: string): Promise<string> {
     const rewards = await this.contract.calculateBasicLPRewards(token);
     return formatUnits(rewards, 18);
+  }
+
+  async getLiquidityPool(user: string, token: string): Promise<{ amount: string; withdrawalTime: number; addedAt: number }> {
+    const liquidity = await this.contract.liquidityPool(user, token);
+    return {
+      amount: formatUnits(liquidity.amount, 18),
+      withdrawalTime: Number(formatUnits(liquidity.withdrawalTime, 0)),
+      addedAt: Number(formatUnits(liquidity.addedAt, 0)),
+    };
   }
 
   // 🔹 Rebalanceo y tesorería

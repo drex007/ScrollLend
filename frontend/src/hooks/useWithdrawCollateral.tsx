@@ -14,10 +14,7 @@ export const useWithdrawCollateral = () => {
     try {
       setIsWithdrawing(true);
 
-      const withdrawTx = await contract.withdrawCollateralDeposited(
-        tokenAddress
-      );
-      await withdrawTx.wait();
+      await contract.withdrawCollateralDeposited(tokenAddress);
       console.log("`withdrawCollateralDeposited()` success");
     } catch (error) {
       console.error("Error in `withdrawCollateralDeposited()`:", error);

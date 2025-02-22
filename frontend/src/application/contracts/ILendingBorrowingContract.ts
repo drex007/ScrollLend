@@ -3,6 +3,7 @@ export interface ILendingBorrowingContract {
   depositCollateral(token: string, amount: string, destinationChainSelector: number, destinationContract: string): Promise<void>;
   borrowAsset(token: string, amount: string, repaymentTimestamp: number, destinationChainSelector: number): Promise<void>;
   withdrawCollateralDeposited(token: string, destinationChainSelector: number, destinationContract: string): Promise<void>;
+  collateralDeposited(user: string, token: string): Promise<string>;
   repayLoan(token: string, amount: string): Promise<void>;
   liquidatePosition(userToLiquidate: string, borrowedAsset: string, collateralAsset: string, amount: string): Promise<void>;
 
@@ -18,6 +19,12 @@ export interface ILendingBorrowingContract {
   withdrawFromLiquidityPool(token: string): Promise<void>;
   totalLiquidity(token: string): Promise<string>;
   calculateBasicLPRewards(token: string): Promise<string>;
+
+  getLiquidityPool(user: string, token: string): Promise<{
+    amount: string;
+    withdrawalTime: number;
+    addedAt: number;
+  }>;
 
   // Rebalanceo y tesorería
   rebalancePortfolio(swapFrom: string, swapTo: string, amount: string): Promise<void>;
