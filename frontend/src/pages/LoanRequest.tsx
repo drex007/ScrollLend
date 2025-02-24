@@ -8,14 +8,23 @@ import { useBorrowAsset } from "../hooks/useBorrowAsset";
 
 export const LoanRequest = () => {
   const { account } = useWallet();
-  const { availableCollateral, loading } = useAvailableCollateral();
-  const { getAssetValue, loadingValueInUSD } = useAssetValueInUSD();
-  const { allowedAmount, loadingAllowedAmount } = useAllowedBorrowingAmount();
-  const { borrowAsset, isBorrowing } = useBorrowAsset();
 
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [loanAmount, setLoanAmount] = useState<string>("");
   const [loanValueInUSD, setLoanValueInUSD] = useState<string | null>(null);
+
+  const { availableCollateral, loading } = useAvailableCollateral(refreshKey);
+  const { getAssetValue, loadingValueInUSD } = useAssetValueInUSD();
+  const { allowedAmount, loadingAllowedAmount } =
+    useAllowedBorrowingAmount(refreshKey);
+
+  const { borrowAsset, isBorrowing, errorBorrow } = useBorrowAsset(() => {
+    setRefreshKey((prevKey) => prevKey + 1);
+    setLoanAmount("");
+    setLoanValueInUSD(null);
+    setSelectedToken(null);
+  });
 
   useEffect(() => {
     const fetchLoanValue = async () => {
@@ -51,6 +60,12 @@ export const LoanRequest = () => {
             }}
             className="space-y-6"
           >
+            {errorBorrow && (
+              <div role="alert" className="alert alert-error">
+                <span>{errorBorrow}</span>
+              </div>
+            )}
+
             {/* Selección de Token con colateral */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">

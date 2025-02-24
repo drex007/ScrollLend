@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletConnectProvider";
 
-export const useAllowedBorrowingAmount = () => {
+export const useAllowedBorrowingAmount = (refreshKey?: number) => {
   const { contract, account } = useWallet();
   const [allowedAmount, setAllowedAmount] = useState<string | null>(null);
   const [loadingAllowedAmount, setLoadingAllowedAmount] =
@@ -29,7 +29,7 @@ export const useAllowedBorrowingAmount = () => {
     };
 
     fetchAllowedAmount();
-  }, [contract, account]);
+  }, [contract, account, refreshKey]);
 
   return { allowedAmount, loadingAllowedAmount };
 };

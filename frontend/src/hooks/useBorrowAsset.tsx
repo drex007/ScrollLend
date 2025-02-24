@@ -1,27 +1,34 @@
 import { useState } from "react";
 import { useWallet } from "../context/WalletConnectProvider";
+import { extractEthersErrorReason } from "../utils/EthersErrorReason";
 
-export const useBorrowAsset = () => {
+export const useBorrowAsset = (onSuccess?: () => void) => {
   const { contract } = useWallet();
   const [isBorrowing, setIsBorrowing] = useState<boolean>(false);
+  const [errorBorrow, setErrorBorrow] = useState<string | null>(null);
 
   const borrowAsset = async (token: string, amount: string) => {
+    setErrorBorrow(null);
+
     if (!contract) {
-      console.warn("useBorrowAsset: Contract not available");
+      setErrorBorrow("Smart contract not available");
       return;
     }
 
     setIsBorrowing(true);
     try {
-      const repaymentTimestamp = Math.floor(Date.now() / 1000) + 2592000; // +30 días
+      const repaymentTimestamp = Math.floor(Date.now() / 1000) + 2592000;
       await contract.borrowAsset(token, amount, repaymentTimestamp);
-      console.log("Loan request successful!");
+
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error requesting loan:", error);
+      const reason = extractEthersErrorReason(error);
+      setErrorBorrow(reason);
+      console.error("Borrow Asset Error:", reason);
     } finally {
       setIsBorrowing(false);
     }
   };
 
-  return { borrowAsset, isBorrowing };
+  return { borrowAsset, isBorrowing, errorBorrow };
 };
