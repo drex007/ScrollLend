@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useLiquidityPool, LiquidityPool } from "./useLiquidityPool";
+import { useLiquidityPool } from "./useLiquidityPool";
 
 const getTier = (amount: number): { name: string; color: string } => {
   if (amount >= 50000) return { name: "Gold", color: "text-yellow-400" };
