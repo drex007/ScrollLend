@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { formatUnits } from "ethers";
 import { useWallet } from "../context/WalletConnectProvider";
 import { TOKENS } from "../utils/Tokens";
 

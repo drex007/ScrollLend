@@ -71,18 +71,11 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
 
   async userHealthFactor(user: string): Promise<string> {
     try {
-      console.log("Llamando a userHealthFactor con:", user);
-
-      const data = await this.contract.provider.call({
-        to: this.contract.address,
-        data: this.contract.interface.encodeFunctionData("userHealthFactor", [user]),
-      });
-
-      const decoded = this.contract.interface.decodeFunctionResult("userHealthFactor", data);
-      return formatUnits(decoded[0], 18);
+      const healthFactor = await this.contract.userHealthFactor(user);
+      return formatUnits(healthFactor, 18);
     } catch (error) {
       console.error("Error en userHealthFactor:", error);
-      return "0"; // Valor seguro en caso de error
+      return "0";
     }
   }
 
