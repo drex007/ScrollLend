@@ -1,4 +1,3 @@
-// hooks/useUserFinancialData.ts
 import { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletConnectProvider";
 

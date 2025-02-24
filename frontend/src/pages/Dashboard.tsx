@@ -2,11 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { useHealthFactor } from "../hooks/useHealthFactor";
 import { useUserFinancialData } from "../hooks/useUserFinancialData";
+import { useTopLiquidityPool } from "../hooks/useTopLiquidityPool";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { healthFactor } = useHealthFactor();
   const { borrowedAmount, collateralAmount, loading } = useUserFinancialData();
+  const { topPool, tierData, loadingLiquidityPools } = useTopLiquidityPool();
 
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200 flex-grow">
@@ -100,25 +102,39 @@ export const Dashboard = () => {
           <h2 className="text-lg font-semibold text-gray-100 mb-4">
             Liquidity Provider Tier
           </h2>
-          <p className="text-sm text-gray-300 mb-4">
-            Your current tier:{" "}
-            <span className="font-bold text-white">Gold</span>
-          </p>
-          <p className="text-sm text-gray-300 mb-4">
-            Locked Liquidity:{" "}
-            <span className="font-bold text-white">$50,000</span>
-          </p>
-          <p className="text-sm text-gray-300 mb-4">
-            Time until unlock:{" "}
-            <span className="font-bold text-white">30 days</span>
-          </p>
-          <button
-            className="btn bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white w-full py-2 rounded-lg shadow-md"
-            onClick={() => navigate("/yield-farming")}
-          >
-            Manage Liquidity
-          </button>
-          <p className="text-gray-400">(TBD)</p>
+
+          {loadingLiquidityPools ? (
+            <p className="text-gray-400">Loading...</p>
+          ) : topPool ? (
+            <>
+              <p className="text-sm text-gray-300 mb-4">
+                Your current tier:{" "}
+                <span className={`font-bold ${tierData?.color}`}>
+                  {tierData?.name}
+                </span>
+              </p>
+              <p className="text-sm text-gray-300 mb-4">
+                Locked Liquidity:{" "}
+                <span className="font-bold text-white">
+                  ${parseFloat(topPool.amount).toLocaleString()}
+                </span>
+              </p>
+              <p className="text-sm text-gray-300 mb-4">
+                Time until unlock:{" "}
+                <span className="font-bold text-white">
+                  {new Date(topPool.withdrawalTime * 1000).toLocaleDateString()}
+                </span>
+              </p>
+              <button
+                className="btn bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white w-full py-2 rounded-lg shadow-md"
+                onClick={() => navigate("/yield-farming")}
+              >
+                Manage Liquidity
+              </button>
+            </>
+          ) : (
+            <p className="text-gray-400">No active liquidity pools</p>
+          )}
         </div>
 
         {/* Tier Explanation Card */}
