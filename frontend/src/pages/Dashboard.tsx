@@ -3,6 +3,7 @@ import { Footer } from "../components/Footer";
 import { useHealthFactor } from "../hooks/useHealthFactor";
 import { useUserFinancialData } from "../hooks/useUserFinancialData";
 import { useTopLiquidityPool } from "../hooks/useTopLiquidityPool";
+import { formatDistanceToNow } from "date-fns";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -120,9 +121,12 @@ export const Dashboard = () => {
                 </span>
               </p>
               <p className="text-sm text-gray-300 mb-4">
-                Time until unlock:{" "}
+                Time until unlock{" "}
                 <span className="font-bold text-white">
-                  {new Date(topPool.withdrawalTime * 1000).toLocaleDateString()}
+                  {formatDistanceToNow(
+                    new Date(topPool.withdrawalTime * 1000),
+                    { addSuffix: true }
+                  )}
                 </span>
               </p>
               <button
