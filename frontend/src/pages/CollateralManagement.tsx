@@ -7,10 +7,13 @@ import { useDepositCollateral } from "../hooks/useDepositCollateral";
 import { useWallet } from "../context/WalletConnectProvider";
 
 export const CollateralManagement = () => {
-  const { collateral, loading } = useCollateral();
-  const { depositCollateral, isDepositing } = useDepositCollateral();
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+  const { collateral, loading, fetchCollateral } = useCollateral(refreshKey);
+  const { depositCollateral, isDepositing } = useDepositCollateral(() => {
+    setRefreshKey((prev) => prev + 1);
+    fetchCollateral();
+  });
   const { account } = useWallet();
-
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
 
@@ -38,7 +41,6 @@ export const CollateralManagement = () => {
 
             {/* Actions */}
             <div className="mt-6 space-y-4">
-              {/* Seleccionar Token */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Select a token
@@ -57,7 +59,6 @@ export const CollateralManagement = () => {
                 </select>
               </div>
 
-              {/* Add Collateral */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Add Collateral
@@ -71,7 +72,7 @@ export const CollateralManagement = () => {
                     onChange={(e) => setAmount(e.target.value)}
                   />
                   <button
-                    className="btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white px-4 py-2 rounded-lg shadow-md"
+                    className="btn bg-gradient-to-r from-green-500 to-teal-500 text-white"
                     onClick={() => {
                       const token = collateral.find(
                         (t) => t.address === selectedToken
@@ -91,9 +92,9 @@ export const CollateralManagement = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center p-6 bg-gray-700 rounded-lg">
-            <p className="text-gray-300 text-lg mb-4">🔗 Connect your wallet</p>
-          </div>
+          <p className="text-gray-400 text-lg text-center">
+            🔗 Connect your wallet
+          </p>
         )}
       </main>
       <Footer />

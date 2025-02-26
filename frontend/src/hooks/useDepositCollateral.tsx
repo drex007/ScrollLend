@@ -4,7 +4,7 @@ import { ERC_20 } from "../abis/ERC_20";
 import { useWallet } from "../context/WalletConnectProvider";
 import { CONTRACT_ADDRESS } from "../utils/LendingBorrowingContract";
 
-export const useDepositCollateral = () => {
+export const useDepositCollateral = (onSuccess?: () => void) => {
   const { contract, signer, account } = useWallet();
   const [isDepositing, setIsDepositing] = useState<boolean>(false);
 
@@ -20,12 +20,10 @@ export const useDepositCollateral = () => {
 
     try {
       setIsDepositing(true);
-
-      // TODO - move to class
       const tokenContract = new Contract(tokenAddress, ERC_20, signer);
       const parsedAmount = parseUnits(amount, decimals);
 
-      // approve
+      // Approve
       const approveTx = await tokenContract.approve(
         CONTRACT_ADDRESS,
         parsedAmount
@@ -33,8 +31,11 @@ export const useDepositCollateral = () => {
       await approveTx.wait();
       console.log("`approve` completed.");
 
+      // Deposit Collateral
       await contract.depositCollateral(tokenAddress, amount);
       console.log("`depositCollateral` completed.");
+
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error in `depositCollateral()`:", error);
     } finally {
