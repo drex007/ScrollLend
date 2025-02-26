@@ -1,3 +1,5 @@
+import { Events } from "../../dto/events";
+
 export interface ILendingBorrowingContract {
   // Gestión de colateral y préstamos
   depositCollateral(token: string, amount: string, destinationChainSelector: number, destinationContract: string): Promise<void>;
@@ -38,4 +40,8 @@ export interface ILendingBorrowingContract {
   // Gestión de propiedad
   transferOwnership(newOwner: string): Promise<void>;
   acceptOwnership(): Promise<void>;
+
+  // filtros
+  queryFilterEventByAccount(acount: string, eventName: string, fromBlock: number, toBlock: number | string): Promise<Events[]>
+  getLastBlock(): Promise<number>
 }

@@ -1,13 +1,20 @@
-import { Contract, formatUnits, parseUnits, Signer } from "ethers";
+import { ethers, Contract, formatUnits, parseUnits, Signer } from "ethers";
 import { ILendingBorrowingContract } from "../application/contracts/ILendingBorrowingContract";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./../utils/LendingBorrowingContract";
 import { BrowserProvider } from "ethers";
+import { EventLog } from "ethers";
+import { Events } from "../dto/events";
+import { JsonRpcApiProvider } from "ethers";
 
 export class EthersLendingBorrowingContract implements ILendingBorrowingContract {
   private contract: Contract;
+  private contractJsonRPC: Contract;
+  private providerRPC: JsonRpcApiProvider;
 
   constructor(provider: BrowserProvider | Signer) {
     this.contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    this.providerRPC = new ethers.JsonRpcProvider("https://go.getblock.io/53b994830ef14714902da3cfc3d6d956");
+    this.contractJsonRPC = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.providerRPC);
   }
 
   async getAssetValueInUSD(token: string, amount: string): Promise<string> {
@@ -141,4 +148,50 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
     const tx = await this.contract.acceptOwnership();
     await tx.wait();
   }
+
+  // filters
+  async queryFilterEventByAccount(acount: string, eventName: string, fromBlock: number, toBlock: number | string = 'latest'): Promise<Events[]> {
+    const filters = this.contractJsonRPC.filters[eventName](acount);
+    const events: EventLog[] = await this.contractJsonRPC.queryFilter(filters, fromBlock, toBlock) as EventLog[];
+
+    const parsedEvent = events.map((log) => {
+      try {
+        const parsedLog = this.contractJsonRPC.interface.parseLog(log);
+        if (!parsedLog) {
+          console.warn("⚠️ Unable to parse log:", log);
+          return null;
+        }
+
+        const { args } = parsedLog;
+        const user: string = args.user;
+        const token: string = args.token;
+        const amount: bigint = args.amount;
+        const timeStamp: bigint = args.timeStamp;
+
+        const formattedDate = Number(timeStamp) * 1000;
+
+        const formattedAmount = formatUnits(amount, 18);
+
+        return {
+          user,
+          token,
+          amount: formattedAmount,
+          timeStamp: formattedDate,
+          eventName
+        }
+      } catch (error) {
+        console.error('error to process event', error);
+        return null
+      }
+    }).filter((event) => event !== null);
+
+    return parsedEvent;
+  }
+
+  getLastBlock(): Promise<number> {
+    return this.providerRPC.getBlockNumber();
+  }
+
+
+
 }
