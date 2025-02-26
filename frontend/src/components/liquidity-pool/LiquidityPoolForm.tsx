@@ -8,12 +8,16 @@ const TIER_LEVELS = [
   { lockPeriod: 10, label: "10 days" },
 ];
 
-export const LiquidityPoolForm = () => {
+interface LiquidityPoolFormProps {
+  onSuccess: () => void;
+}
+
+export const LiquidityPoolForm = ({ onSuccess }: LiquidityPoolFormProps) => {
   const [selectedLockPeriod, setSelectedLockPeriod] = useState<number>(30);
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [selectedToken, setSelectedToken] = useState<string>(TOKENS[0].address);
 
-  const { addLiquidity, isAddingLiquidity } = useAddLiquidity();
+  const { addLiquidity, isAddingLiquidity } = useAddLiquidity(onSuccess);
 
   return (
     <div className="bg-gray-900 p-6 rounded-lg shadow-md mb-6">

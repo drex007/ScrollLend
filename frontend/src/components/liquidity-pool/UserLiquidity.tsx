@@ -2,8 +2,9 @@ import { useLiquidityPool } from "../../hooks/useLiquidityPool";
 import { LiquidityPoolCard } from "./LiquidityPoolCard";
 import { LiquidityPoolSkeleton } from "./LiquidityPoolSkeleton";
 
-export const UserLiquidity = () => {
-  const { liquidityPools, loadingLiquidityPools } = useLiquidityPool();
+export const UserLiquidity = ({ refreshKey }: { refreshKey: number }) => {
+  const { liquidityPools, loadingLiquidityPools } =
+    useLiquidityPool(refreshKey);
 
   return (
     <div className="bg-gray-700 p-4 rounded-lg text-gray-300 mb-6">
