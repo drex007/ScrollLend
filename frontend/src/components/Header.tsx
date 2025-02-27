@@ -7,13 +7,13 @@ export const Header = () => {
   const { open } = useAppKit();
   const location = useLocation();
   const titles: Record<string, string> = {
-    "/": "ScrollLend Dashboard",
-    "/activity-history": "Activity History",
-    "/automation-settings": "Automation Settings",
-    "/collateral-management": "Collateral Management",
-    "/loan-request": "Loan Request",
-    "/yield-farming": "Yield Farming",
-    "/empty-dashboard": "ScrollLend Dashboard",
+    "/app": "ScrollLend Dashboard",
+    "/app/activity-history": "Activity History",
+    "/app/automation-settings": "Automation Settings",
+    "/app/collateral-management": "Collateral Management",
+    "/app/loan-request": "Loan Request",
+    "/app/yield-farming": "Yield Farming",
+    "/app/empty-dashboard": "ScrollLend Dashboard",
   };
   const pageTitle = titles[location.pathname] || "ScrollLend Dashboard";
   return (

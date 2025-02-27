@@ -7,21 +7,26 @@ import { LoanRequest } from "../pages/LoanRequest";
 import { LendingRewards } from "../pages/YieldFarming";
 import MainLayout from "../pages/MainLayout";
 import { DashboardEmpty } from "../pages/DashboardEmpty";
+import { LandingPage } from "../pages/LandingPage";
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<MainLayout />}>
+      {/* Landing Page Route (Outside MainLayout) */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* Main App Routes (Nested under `/app/`) */}
+      <Route path="/app" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
-        <Route path="/activity-history" element={<ActivityHistory />} />
-        <Route path="/automation-settings" element={<AutomationSettings />} />
+        <Route path="activity-history" element={<ActivityHistory />} />
+        <Route path="automation-settings" element={<AutomationSettings />} />
         <Route
-          path="/collateral-management"
+          path="collateral-management"
           element={<CollateralManagement />}
         />
-        <Route path="/loan-request" element={<LoanRequest />} />
-        <Route path="/yield-farming" element={<LendingRewards />} />
-        <Route path="/empty-dashboard" element={<DashboardEmpty />} />
+        <Route path="loan-request" element={<LoanRequest />} />
+        <Route path="yield-farming" element={<LendingRewards />} />
+        <Route path="empty-dashboard" element={<DashboardEmpty />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
     </Routes>

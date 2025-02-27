@@ -9,19 +9,19 @@ export const QuickActions = () => {
       </h2>
       <div className="flex flex-col space-y-4">
         <button
-          onClick={() => navigate("/loan-request")}
+          onClick={() => navigate("/app/loan-request")}
           className="btn bg-gradient-to-r from-green-500 to-teal-500 text-white py-2 rounded-lg shadow-md"
         >
           Request Loan
         </button>
         <button
-          onClick={() => navigate("/collateral-management")}
+          onClick={() => navigate("/app/collateral-management")}
           className="btn bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-2 rounded-lg shadow-md"
         >
           Add Collateral
         </button>
         <button
-          onClick={() => navigate("/collateral-management")}
+          onClick={() => navigate("/app/collateral-management")}
           className="btn bg-gradient-to-r from-red-500 to-pink-500 text-white py-2 rounded-lg shadow-md"
         >
           Withdraw Collateral

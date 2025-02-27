@@ -37,7 +37,7 @@ export const LiquidityProviderTier = () => {
           </p>
           <button
             className="btn bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white w-full py-2 rounded-lg shadow-md"
-            onClick={() => navigate("/yield-farming")}
+            onClick={() => navigate("/app/yield-farming")}
           >
             Manage Liquidity
           </button>
