@@ -98,7 +98,7 @@ export const LandingPage = () => {
 
       {/* Footer */}
       <footer className="text-center py-6 text-gray-400">
-        <p>© 2025 Your DeFi App. Built on Scroll with ❤️</p>
+        <p>ScrollLend DeFi App. Built on Scroll with ❤️</p>
       </footer>
     </div>
   );
