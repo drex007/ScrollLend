@@ -4,7 +4,7 @@ import { useAppKit, useDisconnect } from "@reown/appkit/react";
 
 export const Header = () => {
   const { account } = useWallet();
-  const { open, close } = useAppKit();
+  const { open } = useAppKit();
   const { disconnect } = useDisconnect();
   const location = useLocation();
   const titles: Record<string, string> = {
