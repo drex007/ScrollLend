@@ -1,7 +1,26 @@
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const { isConnected } = useAppKitAccount();
+  const { open } = useAppKit();
+
+  useEffect(() => {
+    if (isConnected) {
+      navigate("/app");
+    }
+  }, [isConnected]);
+
+  const connectAndGoToApp = async () => {
+    if (isConnected) {
+      navigate("/app");
+    } else {
+      open();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-gray-200">
       {/* Hero Section */}
@@ -17,7 +36,7 @@ export const LandingPage = () => {
           with AI-driven automation.
         </p>
         <button
-          onClick={() => navigate("/app")}
+          onClick={() => connectAndGoToApp()}
           className="mt-6 btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white px-6 py-2 rounded-lg shadow-md"
         >
           Go to App

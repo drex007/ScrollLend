@@ -8,7 +8,7 @@ interface WalletContextType {
   account: string | null;
   provider: BrowserProvider | null;
   signer: Signer | null;
-  contract: EthersLendingBorrowingContract | null;
+  contract: ILendingBorrowingContract | null;
 }
 
 const WalletContext = createContext<WalletContextType>({
