@@ -74,7 +74,13 @@ export const LiquidityPoolForm = ({ onSuccess }: LiquidityPoolFormProps) => {
         onClick={() =>
           addLiquidity(selectedToken, depositAmount, selectedLockPeriod)
         }
-        className="btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white w-full py-2 rounded-lg shadow-md"
+        className={`btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white w-full py-2 rounded-lg shadow-md
+          ${
+            isAddingLiquidity
+              ? "!text-gray-600 !cursor-not-allowed"
+              : "text-white"
+          }
+          `}
         disabled={isAddingLiquidity}
       >
         {isAddingLiquidity ? "Depositing..." : "Deposit Liquidity"}
