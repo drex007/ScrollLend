@@ -34,7 +34,8 @@ export interface ILendingBorrowingContract {
   treasury(token: string): Promise<string>;
 
   // Información general
-  getTotalValueLocked(token: string): Promise<string>;
+  getTotalValueLocked(): Promise<string>;
+  getTotalValueLockedByToken(token: string): Promise<string>;
   priceFeeds(token: string): Promise<string>;
 
   // Gestión de propiedad

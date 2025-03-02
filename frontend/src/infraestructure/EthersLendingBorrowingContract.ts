@@ -103,6 +103,11 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
     return formatUnits(amount, 18);
   }
 
+  async getTotalValueLocked(): Promise<string> {
+    const tvl = await this.contract.totalValueLocked();
+    return formatUnits(tvl, 18);
+  }
+
   async calculateBasicLPRewards(token: string): Promise<string> {
     const rewards = await this.contract.calculateBasicLPRewards(token);
     return formatUnits(rewards, 18);
@@ -129,7 +134,7 @@ export class EthersLendingBorrowingContract implements ILendingBorrowingContract
   }
 
   // 🔹 Información general
-  async getTotalValueLocked(token: string): Promise<string> {
+  async getTotalValueLockedByToken(token: string): Promise<string> {
     const value = await this.contract.tvl(token);
     return formatUnits(value, 18);
   }

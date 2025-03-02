@@ -6,6 +6,8 @@ import { HealthFactor } from "../components/dashboard/HealthFactor";
 import { LiquidityProviderTier } from "../components/dashboard/LiquidityProviderTier";
 import { QuickActions } from "../components/dashboard/QuickActions";
 import { TierExplanation } from "../components/dashboard/TierExplanation";
+import { TotalValueLocked } from "../components/dashboard/TotalValueLocked";
+import { TotalLiquidityUSD } from "../components/dashboard/TotalLiquidityUSD";
 
 export const Dashboard = () => {
   return (
@@ -33,6 +35,12 @@ export const Dashboard = () => {
 
         {/* Quick Actions (sin cambios) */}
         <QuickActions />
+
+        {/* TVL */}
+        <TotalValueLocked />
+
+        {/* Total liquidity */}
+        <TotalLiquidityUSD />
 
         {/* Liquidity Provider Tier Section */}
         <LiquidityProviderTier />

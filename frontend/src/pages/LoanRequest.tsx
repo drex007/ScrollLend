@@ -114,11 +114,18 @@ export const LoanRequest = () => {
               ) : null}
             </div>
 
-            {/* Botón de Envío */}
             <div className="text-right">
               <button
                 type="submit"
-                className="btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white px-6 py-2 rounded-lg shadow-lg"
+                className={`btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 px-6 py-2 rounded-lg shadow-lg 
+      ${
+        !selectedToken ||
+        loanAmount === "" ||
+        Number(loanValueInUSD) > Number(allowedAmount) ||
+        isBorrowing
+          ? "!text-gray-600 !cursor-not-allowed"
+          : "text-white"
+      }`}
                 disabled={
                   !selectedToken ||
                   loanAmount === "" ||
