@@ -119,12 +119,12 @@ contract LendingBorrowingContract  is ReentrancyGuard , OwnerIsCreator {
     uint256 HEALTH_FACTOR = 1_000_000_000_000_000_000; 
     uint256 WEI_PRECISION = 1_000_000_000_000_000_000;
     uint256 PRICE_FEED_PRECISION = 10_000_000_000;
-    uint256 HEALTH_FACTOR_THRESHOLD = 75_00_000_000_000_000_000; //75% of the healthfactor
+    uint256 HEALTH_FACTOR_THRESHOLD = 750_000_000_000_000_000; //75% of the healthfactor
     address []  public collateralTokens;
     uint56 LIQUIDATION_PERCENTAGE = 5;
     uint56 LIQUIDATION_PRECISION = 100;
     uint56 DEPOSIT_CHARGE = 4; // 1% for deposit
-    uint256 rewardRate = 15;  // 
+    uint256 rewardRate = 10;  // 
  
 
 
@@ -151,10 +151,9 @@ contract LendingBorrowingContract  is ReentrancyGuard , OwnerIsCreator {
 
     //Functions
     function depositCollateral ( address  token,  uint256 amount) public isTokenAllowed(token) isGreaterThanZero(amount) nonReentrant {
-        //CCIP action here is 0 
+         
         collateralDeposited[msg.sender][token] += amount;
         tvl[token] +=amount;
-
 
         bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
 
@@ -168,14 +167,12 @@ contract LendingBorrowingContract  is ReentrancyGuard , OwnerIsCreator {
     }
 
     function borrowAsset (address token, uint256 amount, uint256 repaymentTimeStamp ) public checkRepaymentDateIsGreatherThanBorrowDate(repaymentTimeStamp, block.timestamp) isTokenAllowed(token) isGreaterThanZero(amount) checkForCollateralTokensLength nonReentrant{
-        //Command action === 2
-        //Check if Healfactor is broken
-        require(amount < totalLiquidity[token], "Insufficient contract balance");
 
-        uint256 _amountToBorrow = getAssetValueInUSD(token, amount);
+        require(amount < totalLiquidity[token], "Insufficient contract balance");
+        uint256 amountToBorrow = getAssetValueInUSD(token, amount);
         uint256 allowedAmount = allowedBorrowingAmount(msg.sender);
 
-        require(_amountToBorrow < allowedAmount, "You can borrow this amount");
+        require(amountToBorrow < allowedAmount, "You can borrow this amount");
 
         checkForBrokenHealthFactor(msg.sender);
 
@@ -205,7 +202,7 @@ contract LendingBorrowingContract  is ReentrancyGuard , OwnerIsCreator {
 
 
     function addLiquidity (address token, uint256 amount, uint256 withdrawalTime) public  isTokenAllowed(token) isGreaterThanZero(amount) nonReentrant {
-        // Command action  === 1
+   
         require(withdrawalTime > block.timestamp,"Extend withdrawal time");
 
         liquidityPool[msg.sender][token].amount += amount;
@@ -234,12 +231,12 @@ contract LendingBorrowingContract  is ReentrancyGuard , OwnerIsCreator {
         uint256  _userBorrowedAssets = userTotalBorrowedAssetInUsd(user);
 
         if(_userBorrowedAssets == 0){
-            _userBorrowedAssets = 1;
+            _userBorrowedAssets = WEI_PRECISION;
         }
 
-        uint256 _heathFactor = (_usercollateralAssets * HEALTH_FACTOR_THRESHOLD) / _userBorrowedAssets;
+        uint256 _heathFactor = (_usercollateralAssets * HEALTH_FACTOR_THRESHOLD) / _userBorrowedAssets ;
 
-        return _heathFactor;
+        return _heathFactor; // divide by WEI to get actual value
     
         
     }
@@ -293,13 +290,13 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
 
     uint256 _amount = collateralDeposited[msg.sender][token];
     
-    uint256 _borrowedAmount = 0;
+    uint256 borrowedAmount = 0;
     
    for(uint256  i = 0; i < collateralTokens.length; i++) {
-        _borrowedAmount += assetsBorrowed[msg.sender][collateralTokens[i]].amount; 
+        borrowedAmount += assetsBorrowed[msg.sender][collateralTokens[i]].amount; 
     }
 
-    require(_amount < tvl[token] &&  _borrowedAmount == 0, "Insuffient contract or unsettled borrowing");
+    require(_amount < tvl[token] &&  borrowedAmount == 0, "Insuffient contract or unsettled borrowing");
   
 
     collateralDeposited[msg.sender][token] = 0 ;
@@ -446,8 +443,9 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
 
     function checkForBrokenHealthFactor(address user) public view {
         uint256 healthFactor = userHealthFactor(user);
+   
         if(healthFactor  < HEALTH_FACTOR_THRESHOLD){
-            revert LendingBorrowingContract__HealthFactorIsBroken(healthFactor);
+            revert LendingBorrowingContract__HealthFactorIsBroken(healthFactor); // divide by 100 WEI
         }
 
     }
@@ -460,7 +458,7 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
         uint256 collateralAssetValue =  userTotalCollateralAssetInUsd(user);
         uint256 borrowedAssetValue = userTotalBorrowedAssetInUsd(user);
 
-        uint256 effectiveCollateralValue = (collateralAssetValue * HEALTH_FACTOR_THRESHOLD) /WEI_PRECISION;
+        uint256 effectiveCollateralValue = (collateralAssetValue * HEALTH_FACTOR_THRESHOLD) / WEI_PRECISION; 
 
         // Prevent underflow: if borrowed amount exceeds effective collateral, return 0
         if (borrowedAssetValue >= effectiveCollateralValue) {
@@ -474,7 +472,7 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
            //action should be
             uint256 amountOnToken = collateralDeposited[msg.sender][swapFrom];
             require(amountOnToken >= amount, "Insufficient collateral");
-            uint256 valueOfTokenFrom = getAssetValueInUSD(swapFrom,  WEI_PRECISION); //et value of 1 token From;
+            uint256 valueOfTokenFrom = getAssetValueInUSD(swapFrom,  WEI_PRECISION); //Get value of 1 token From;
             uint256 valueOfTokenTo = getAssetValueInUSD(swapTo, WEI_PRECISION); //Get value of 1 token To
 
             uint256 rebalanced = (amount * valueOfTokenFrom) / valueOfTokenTo ;
@@ -493,7 +491,7 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
     uint256 liquidityProvided = liquidityPool[msg.sender][token].amount;
     
     // Ensure the LP has not withdrawn; use current block time
-    uint256 period = (block.timestamp - liquidityPool[msg.sender][token].addedAt) / 86400;
+    uint256 period = ((block.timestamp - liquidityPool[msg.sender][token].addedAt) * WEI_PRECISION) / 86400;
     
     require(totalPoolLiquidity > 0, "No liquidity in the pool");
     
@@ -501,9 +499,9 @@ function withdrawCollateralDeposited(address token) public isTokenAllowed(token)
     uint256 poolShare = (liquidityProvided * WEI_PRECISION) / totalPoolLiquidity;
     
     // Reward calculation with precision
-    uint256 rewards = (rewardRate * period * poolShare) / (10000); // 0.15 % per day. Reward = 15
+    uint256 rewards = (rewardRate * period * poolShare) / (1000 * WEI_PRECISION); // 0.1% per day. Reward = 10
     
-    return rewards; // 
+    return rewards; 
 }
 
 

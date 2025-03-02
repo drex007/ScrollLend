@@ -47,4 +47,4 @@ wETH : https://sepolia.scrollscan.com/token/0x08fe95f3e49c2d5231eef694c2087a7a55
 
 ### Deployed contract
 
-https://sepolia.scrollscan.com/address/0xb97a27cea38ca15b913c742384a748afe01044a2#code
+https://sepolia.scrollscan.com/address/0x789FA11b6B9Ba92a8Cf707C01EE96e808B5b3A96#code
