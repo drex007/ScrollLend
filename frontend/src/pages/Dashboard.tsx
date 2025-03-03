@@ -8,6 +8,7 @@ import { QuickActions } from "../components/dashboard/QuickActions";
 import { TierExplanation } from "../components/dashboard/TierExplanation";
 import { TotalValueLocked } from "../components/dashboard/TotalValueLocked";
 import { TotalLiquidityUSD } from "../components/dashboard/TotalLiquidityUSD";
+import { PendingInterest } from "../components/dashboard/PendingInterest";
 
 export const Dashboard = () => {
   return (
@@ -24,13 +25,7 @@ export const Dashboard = () => {
           <CurrentCollateral />
 
           {/* Pending Interest */}
-          <div className="card bg-gray-800 shadow-lg rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-100">
-              Pending Interest
-            </h2>
-            <p className="text-2xl font-bold my-4">-</p>
-            <p className="text-gray-400">(TBD)</p>
-          </div>
+          <PendingInterest />
         </div>
 
         {/* Quick Actions (sin cambios) */}
