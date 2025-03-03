@@ -26,6 +26,12 @@ export const QuickActions = () => {
         >
           Withdraw Collateral
         </button>
+        <button
+          onClick={() => navigate("/app/automation-settings")}
+          className="btn bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-2 rounded-lg shadow-md"
+        >
+          Autometed Risk
+        </button>
       </div>
     </div>
   );
