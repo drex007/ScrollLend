@@ -8,10 +8,7 @@ export const useAvailableCollateral = (refreshKey?: number) => {
   >([]);
 
   useEffect(() => {
-    const filteredCollateral = collateral.filter(
-      (token) => parseFloat(token.amount) > 0
-    );
-    setAvailableCollateral(filteredCollateral);
+    setAvailableCollateral(collateral);
   }, [collateral, refreshKey]);
 
   return { availableCollateral, loading };
