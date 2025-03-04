@@ -32,6 +32,7 @@ const TIER_LEVELS = [
 
 export const LendingRewards = () => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showToast, setShowToast] = useState(false);
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200">
       <main className="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -44,7 +45,11 @@ export const LendingRewards = () => {
 
         {/* Deposit Form */}
         <LiquidityPoolForm
-          onSuccess={() => setRefreshKey((prev) => prev + 1)}
+          onSuccess={() => {
+            setRefreshKey((prev) => prev + 1);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+          }}
         />
 
         {/* Tier Levels Info */}
@@ -72,7 +77,13 @@ export const LendingRewards = () => {
           </div>
         </div>
       </main>
-
+      {showToast && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-success">
+            <span>Liquidity provider successfully!</span>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );
