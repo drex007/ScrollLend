@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CollateralToken } from "../../hooks/useCollateral";
 import { useWithdrawCollateral } from "../../hooks/useWithdrawCollateral";
 
@@ -6,7 +7,22 @@ interface CollateralCardProps {
 }
 
 export const CollateralCard = ({ token }: CollateralCardProps) => {
-  const { withdrawCollateral, isWithdrawing } = useWithdrawCollateral();
+  const [showToast, setShowToast] = useState(false);
+  const [showToastError, setShowToastError] = useState(false);
+  const [msgError, setMsgError] = useState<string>("");
+
+  const { withdrawCollateral, isWithdrawing } = useWithdrawCollateral(
+    () => {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      setMsgError("");
+    },
+    (error) => {
+      setMsgError(error);
+      setShowToastError(true);
+      setTimeout(() => setShowToastError(false), 3000);
+    }
+  );
 
   return (
     <div className="card w-full bg-gray-800 shadow-xl border border-gray-700 p-4">
@@ -32,11 +48,24 @@ export const CollateralCard = ({ token }: CollateralCardProps) => {
           {isWithdrawing ? "Withdrawing..." : "Withdraw"}
         </button>
       </div>
+      {showToast && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-success">
+            <span>Withdraw collateral successfully!</span>
+          </div>
+        </div>
+      )}
+      {showToastError && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-error">
+            <span>{msgError}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// 🔹 Función para mostrar iconos personalizados por token
 const getTokenIcon = (symbol: string) => {
   switch (symbol) {
     case "sUSDT":
@@ -50,6 +79,5 @@ const getTokenIcon = (symbol: string) => {
   }
 };
 
-// 🔹 Función para acortar direcciones
 const shortenAddress = (address: string) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;

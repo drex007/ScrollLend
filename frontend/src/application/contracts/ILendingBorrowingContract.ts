@@ -2,9 +2,9 @@ import { Events } from "../../dto/events";
 
 export interface ILendingBorrowingContract {
   // Gestión de colateral y préstamos
-  depositCollateral(token: string, amount: string, destinationChainSelector: number, destinationContract: string): Promise<void>;
-  borrowAsset(token: string, amount: string, repaymentTimestamp: number, destinationChainSelector: number): Promise<void>;
-  withdrawCollateralDeposited(token: string, destinationChainSelector: number, destinationContract: string): Promise<void>;
+  depositCollateral(token: string, amount: string): Promise<void>;
+  borrowAsset(token: string, amount: string, repaymentTimestamp: number): Promise<void>;
+  withdrawCollateralDeposited(token: string): Promise<void>;
   collateralDeposited(user: string, token: string): Promise<string>;
   repayLoan(token: string, amount: string): Promise<void>;
   liquidatePosition(userToLiquidate: string, borrowedAsset: string, collateralAsset: string, amount: string): Promise<void>;

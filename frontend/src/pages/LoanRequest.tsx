@@ -13,6 +13,7 @@ export const LoanRequest = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [loanAmount, setLoanAmount] = useState<string>("");
   const [loanValueInUSD, setLoanValueInUSD] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   const { availableCollateral, loading } = useAvailableCollateral(refreshKey);
   const { getAssetValue, loadingValueInUSD } = useAssetValueInUSD();
@@ -24,6 +25,8 @@ export const LoanRequest = () => {
     setLoanAmount("");
     setLoanValueInUSD(null);
     setSelectedToken(null);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   });
 
   useEffect(() => {
@@ -143,6 +146,13 @@ export const LoanRequest = () => {
           </form>
         )}
       </main>
+      {showToast && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-success">
+            <span>Loan request successfully!</span>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );

@@ -8,10 +8,14 @@ import { useWallet } from "../context/WalletConnectProvider";
 
 export const CollateralManagement = () => {
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [showToast, setShowToast] = useState(false);
+
   const { collateral, loading, fetchCollateral } = useCollateral(refreshKey);
   const { depositCollateral, isDepositing } = useDepositCollateral(() => {
     setRefreshKey((prev) => prev + 1);
     fetchCollateral();
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   });
   const { account } = useWallet();
   const [selectedToken, setSelectedToken] = useState<string>("");
@@ -97,6 +101,13 @@ export const CollateralManagement = () => {
           </p>
         )}
       </main>
+      {showToast && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-success">
+            <span>Collateral add successfully!</span>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );
