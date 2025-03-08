@@ -1,0 +1,5 @@
+import { LENDING_BORROWING_CONTRACT_ABI } from "./../abis/LendingBorrowingContract";
+
+
+export const CONTRACT_ADDRESS = "0x789FA11b6B9Ba92a8Cf707C01EE96e808B5b3A96";
+export const CONTRACT_ABI = LENDING_BORROWING_CONTRACT_ABI;

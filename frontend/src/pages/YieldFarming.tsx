@@ -1,66 +1,89 @@
 import { Footer } from "../components/Footer";
+import { UserLiquidity } from "../components/liquidity-pool/UserLiquidity";
+import { LiquidityPoolForm } from "../components/liquidity-pool/LiquidityPoolForm";
+import { useState } from "react";
 
-export const YieldFarming = () => {
+const TIER_LEVELS = [
+  {
+    name: "Gold",
+    minDeposit: 50000,
+    lockPeriod: 30,
+    color: "text-yellow-400",
+    reward: "🚀 Highest rewards",
+    icon: "🏆",
+  },
+  {
+    name: "Silver",
+    minDeposit: 20000,
+    lockPeriod: 20,
+    color: "text-gray-400",
+    reward: "⚖️ Balanced rewards",
+    icon: "🥈",
+  },
+  {
+    name: "Bronze",
+    minDeposit: 5000,
+    lockPeriod: 10,
+    color: "text-orange-400",
+    reward: "🎯 Basic rewards",
+    icon: "🥉",
+  },
+];
+
+export const LendingRewards = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showToast, setShowToast] = useState(false);
   return (
     <div className="p-6 bg-gradient-to-b from-black via-gray-900 to-black min-h-[calc(100vh-96px)] text-gray-200">
-      {/* Yield Farming Overview */}
       <main className="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
         <h2 className="text-xl font-semibold text-gray-100 mb-4">
-          Your Yield Earnings
+          Lending & Rewards
         </h2>
-        <div className="bg-gray-700 p-4 rounded-lg text-gray-300 mb-6">
-          <p>
-            <strong>Total Yield Earned:</strong> 3.2 ETH
-          </p>
-          <p>
-            <strong>APY:</strong> 12.5%
-          </p>
-        </div>
 
-        {/* Actions */}
-        <div className="flex space-x-4">
-          {/* Claim Yield */}
-          <button className="flex-1 btn bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white px-6 py-2 rounded-lg shadow-md">
-            Claim Rewards
-          </button>
+        {/* User Balance & Tier Info */}
+        <UserLiquidity refreshKey={refreshKey} />
 
-          {/* Reinvest Yield */}
-          <button className="flex-1 btn bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-6 py-2 rounded-lg shadow-md">
-            Reinvest Yield
-          </button>
-        </div>
+        {/* Deposit Form */}
+        <LiquidityPoolForm
+          onSuccess={() => {
+            setRefreshKey((prev) => prev + 1);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+          }}
+        />
 
-        {/* Recent Yield Transactions */}
-        <h2 className="text-xl font-semibold text-gray-100 mt-8 mb-4">
-          Recent Yield Transactions
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="table w-full text-gray-300">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="p-2 text-left">Date</th>
-                <th className="p-2 text-left">Action</th>
-                <th className="p-2 text-left">Amount</th>
-                <th className="p-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="hover:bg-gray-700">
-                <td className="p-2">01/28/2025</td>
-                <td className="p-2">Yield Claimed</td>
-                <td className="p-2">+0.5 ETH</td>
-                <td className="p-2 text-green-400">Completed</td>
-              </tr>
-              <tr className="hover:bg-gray-700">
-                <td className="p-2">01/27/2025</td>
-                <td className="p-2">Yield Reinvested</td>
-                <td className="p-2">+1.0 ETH</td>
-                <td className="p-2 text-green-400">Completed</td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Tier Levels Info */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-100 mb-4 text-center">
+            Tier Levels
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TIER_LEVELS.map((tier) => (
+              <div
+                key={tier.name}
+                className="text-center p-4 bg-gray-900 rounded-lg"
+              >
+                <span className={`${tier.color} text-3xl`}>{tier.icon}</span>
+                <h3 className={`text-lg font-semibold ${tier.color} mt-2`}>
+                  {tier.name}
+                </h3>
+                <ul className="text-sm text-gray-300 text-left mt-2 space-y-2">
+                  <li>✨ Minimum deposit: ${tier.minDeposit}</li>
+                  <li>⏳ Lock period: {tier.lockPeriod} days</li>
+                  <li>{tier.reward}</li>
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
+      {showToast && (
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-success">
+            <span>Liquidity provider successfully!</span>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );

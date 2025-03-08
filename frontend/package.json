@@ -10,8 +10,11 @@
     "deploy": "vite build && gh-pages -d dist"
   },
   "dependencies": {
+    "@reown/appkit": "^1.6.8",
+    "@reown/appkit-adapter-ethers": "^1.6.8",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.23",
+    "date-fns": "^4.1.0",
     "ethers": "^6.13.5",
     "postcss": "^8.4.49",
     "react": "^18.3.1",
